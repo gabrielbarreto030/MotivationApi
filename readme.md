@@ -1,4 +1,4 @@
-Motivation API
+# Motivation API
 
 API para sistema de motivação pessoal.
 
@@ -20,7 +20,7 @@ xUnit
 
 Swagger
 
-Backlog (30 dias)
+# Backlog (30 dias)
 Fase 1 – Fundamentos (Dias 1–5)
 
 Dia 1: Scaffold solução + projetos (DDD structure)
