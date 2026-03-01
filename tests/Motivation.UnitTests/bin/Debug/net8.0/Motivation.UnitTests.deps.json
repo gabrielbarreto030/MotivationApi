@@ -40,6 +40,7 @@
           "Microsoft.AspNetCore.Mvc.Testing": "8.0.21",
           "Microsoft.NET.Test.Sdk": "17.8.0",
           "Motivation.Api": "1.0.0",
+          "Motivation.Domain": "1.0.0",
           "coverlet.collector": "6.0.0",
           "xunit": "2.5.3",
           "xunit.runner.visualstudio": "2.5.3",
@@ -1989,6 +1990,17 @@
         },
         "compile": {
           "Motivation.Api.dll": {}
+        }
+      },
+      "Motivation.Domain/1.0.0": {
+        "runtime": {
+          "Motivation.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        },
+        "compile": {
+          "Motivation.Domain.dll": {}
         }
       },
       "Microsoft.AspNetCore.Antiforgery/8.0.0.0": {
@@ -4772,6 +4784,11 @@
       "hashPath": "xunit.runner.visualstudio.2.5.3.nupkg.sha512"
     },
     "Motivation.Api/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Motivation.Domain/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

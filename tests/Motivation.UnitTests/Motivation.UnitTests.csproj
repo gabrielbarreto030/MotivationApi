@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Motivation.Api\Motivation.Api.csproj" />
+    <ProjectReference Include="..\..\src\Motivation.Domain\Motivation.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2680,6 +2680,16 @@
         "frameworkReferences": [
           "Microsoft.AspNetCore.App"
         ]
+      },
+      "Motivation.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v8.0",
+        "compile": {
+          "bin/placeholder/Motivation.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Motivation.Domain.dll": {}
+        }
       }
     }
   },
@@ -8088,6 +8098,11 @@
       "type": "project",
       "path": "../../src/Motivation.Api/Motivation.Api.csproj",
       "msbuildProject": "../../src/Motivation.Api/Motivation.Api.csproj"
+    },
+    "Motivation.Domain/1.0.0": {
+      "type": "project",
+      "path": "../../src/Motivation.Domain/Motivation.Domain.csproj",
+      "msbuildProject": "../../src/Motivation.Domain/Motivation.Domain.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -8096,6 +8111,7 @@
       "Microsoft.AspNetCore.Mvc.Testing >= 8.0.21",
       "Microsoft.NET.Test.Sdk >= 17.8.0",
       "Motivation.Api >= 1.0.0",
+      "Motivation.Domain >= 1.0.0",
       "coverlet.collector >= 6.0.0",
       "xunit >= 2.5.3",
       "xunit.runner.visualstudio >= 2.5.3"
@@ -8136,6 +8152,9 @@
           "projectReferences": {
             "C:\\Users\\Gentil\\Documents\\Projetos Pessoais\\AutoProjeto\\DOTNET\\src\\Motivation.Api\\Motivation.Api.csproj": {
               "projectPath": "C:\\Users\\Gentil\\Documents\\Projetos Pessoais\\AutoProjeto\\DOTNET\\src\\Motivation.Api\\Motivation.Api.csproj"
+            },
+            "C:\\Users\\Gentil\\Documents\\Projetos Pessoais\\AutoProjeto\\DOTNET\\src\\Motivation.Domain\\Motivation.Domain.csproj": {
+              "projectPath": "C:\\Users\\Gentil\\Documents\\Projetos Pessoais\\AutoProjeto\\DOTNET\\src\\Motivation.Domain\\Motivation.Domain.csproj"
             }
           }
         }
