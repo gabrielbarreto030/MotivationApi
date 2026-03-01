@@ -1,4 +1,8 @@
 using Serilog;
+using Motivation.Infrastructure.Db;
+using Microsoft.EntityFrameworkCore;
+using Motivation.Domain.Interfaces;
+using Motivation.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +18,14 @@ builder.Services.AddSwaggerGen();
 
 // health check
 builder.Services.AddHealthChecks();
+// memory cache for quick queries
+builder.Services.AddMemoryCache();
+
+// EF Core InMemory DbContext
+builder.Services.AddDbContext<AppDbContext>(opts => opts.UseInMemoryDatabase("MotivationDb"));
+
+// repository registrations
+builder.Services.AddScoped<IGoalRepository, GoalRepository>();
 
 var app = builder.Build();
 
