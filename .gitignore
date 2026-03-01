@@ -1,0 +1,45 @@
+# Visual Studio / .NET ignore rules
+
+# Build directories
+**/bin/
+**/obj/
+
+# Rider
+.idea/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# NuGet
+*.nupkg
+**/packages/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Certificates
+*.pfx
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+
+# Other
+*.vspscc
+*.vssscc
+
+# Entity Framework LocalDB
+*.mdf
+*.ldf
