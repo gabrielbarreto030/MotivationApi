@@ -26,6 +26,9 @@ builder.Services.AddDbContext<AppDbContext>(opts => opts.UseInMemoryDatabase("Mo
 
 // repository registrations
 builder.Services.AddScoped<IGoalRepository, GoalRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IStepRepository, StepRepository>();
+builder.Services.AddScoped<IMotivationRepository, MotivationRepository>();
 
 var app = builder.Build();
 
