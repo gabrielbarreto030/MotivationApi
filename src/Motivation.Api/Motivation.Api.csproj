@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Motivation.Infrastructure\Motivation.Infrastructure.csproj" />
+    <ProjectReference Include="..\Motivation.Application\Motivation.Application.csproj" />
   </ItemGroup>
 
 </Project>

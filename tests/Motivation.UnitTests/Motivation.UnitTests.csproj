@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Motivation.Api\Motivation.Api.csproj" />
     <ProjectReference Include="..\..\src\Motivation.Domain\Motivation.Domain.csproj" />
     <ProjectReference Include="..\..\src\Motivation.Infrastructure\Motivation.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Motivation.Application\Motivation.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

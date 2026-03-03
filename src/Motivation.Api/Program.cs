@@ -30,6 +30,12 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IStepRepository, StepRepository>();
 builder.Services.AddScoped<IMotivationRepository, MotivationRepository>();
 
+// application services
+builder.Services.AddScoped<Motivation.Application.Interfaces.IAuthService, Motivation.Application.Services.AuthService>();
+
+// add controllers
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -63,6 +69,9 @@ app.MapGet("/weatherforecast", () =>
 
 // health endpoint
 app.MapHealthChecks("/health");
+
+// map controllers
+app.MapControllers();
 
 app.Run();
 
