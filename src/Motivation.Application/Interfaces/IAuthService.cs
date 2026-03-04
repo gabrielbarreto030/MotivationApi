@@ -6,6 +6,6 @@ namespace Motivation.Application.Interfaces
     public interface IAuthService
     {
         Task<RegisterResponse> RegisterAsync(RegisterRequest request);
-        // future login method could go here
+        Task<LoginResponse> LoginAsync(LoginRequest request);
     }
 }

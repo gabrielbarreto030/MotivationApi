@@ -28,21 +28,27 @@ namespace Motivation.Infrastructure.Repositories
         public async Task<User> GetByIdAsync(Guid userId)
         {
             var key = GetIdCacheKey(userId);
-            return await _cache.GetOrCreateAsync(key, async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                return await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            });
+            if (_cache.TryGetValue<User>(key, out var cached) && cached != null)
+                return cached;
+
+            var found = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (found != null)
+                _cache.Set(key, found, TimeSpan.FromMinutes(10));
+
+            return found;
         }
 
         public async Task<User> GetByEmailAsync(string email)
         {
             var key = GetEmailCacheKey(email);
-            return await _cache.GetOrCreateAsync(key, async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-                return await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
-            });
+            if (_cache.TryGetValue<User>(key, out var cached) && cached != null)
+                return cached;
+
+            var found = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (found != null)
+                _cache.Set(key, found, TimeSpan.FromMinutes(10));
+
+            return found;
         }
 
         private static string GetIdCacheKey(Guid userId) => $"user:id:{userId}";

@@ -33,5 +33,19 @@ namespace Motivation.Api.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
+        {
+            try
+            {
+                var result = await _authService.LoginAsync(new LoginRequest(dto.Email, dto.Password));
+                return Ok(new { result.UserId, result.Email, Token = result.Token });
+            }
+            catch (AuthenticationFailedException ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
     }
 }
