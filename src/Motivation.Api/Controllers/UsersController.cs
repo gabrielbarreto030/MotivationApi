@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Motivation.Api.Models;
 using Motivation.Application.DTOs;
 using Motivation.Application.Exceptions;
@@ -46,6 +47,17 @@ namespace Motivation.Api.Controllers
             {
                 return Unauthorized(new { message = ex.Message });
             }
+        }
+
+        [Authorize]
+        [HttpGet("profile")]
+        public IActionResult GetProfile()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            return Ok(new { userId = userIdClaim.Value, message = "Access granted with valid token" });
         }
     }
 }

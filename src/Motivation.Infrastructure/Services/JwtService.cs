@@ -1,8 +1,10 @@
 using System;
-using System.Security.Cryptography;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using Motivation.Application.Interfaces;
 using Motivation.Domain.Entities;
 
@@ -24,47 +26,28 @@ namespace Motivation.Infrastructure.Services
             var audience = _config["Jwt:Audience"] ?? "motivation";
             var expiresMinutes = int.TryParse(_config["Jwt:ExpiresMinutes"], out var m) ? m : 60;
 
-            var header = new { alg = "HS256", typ = "JWT" };
-            var now = DateTimeOffset.UtcNow;
-            var payload = new
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+            var signingCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(keyBytes),
+                SecurityAlgorithms.HmacSha256
+            );
+
+            var claims = new List<Claim>
             {
-                sub = user.Id.ToString(),
-                email = user.Email,
-                iss = issuer,
-                aud = audience,
-                iat = now.ToUnixTimeSeconds(),
-                exp = now.AddMinutes(expiresMinutes).ToUnixTimeSeconds()
+                new("sub", user.Id.ToString()),
+                new("email", user.Email)
             };
 
-            string Encode(object obj)
-            {
-                var json = JsonSerializer.Serialize(obj);
-                var bytes = Encoding.UTF8.GetBytes(json);
-                return Base64UrlEncode(bytes);
-            }
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(expiresMinutes),
+                signingCredentials: signingCredentials
+            );
 
-            var headerEncoded = Encode(header);
-            var payloadEncoded = Encode(payload);
-            var toSign = headerEncoded + "." + payloadEncoded;
-            var signature = ComputeHmacSha256(key, toSign);
-            return toSign + "." + signature;
-        }
-
-        private static string ComputeHmacSha256(string key, string data)
-        {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var dataBytes = Encoding.UTF8.GetBytes(data);
-            using var hmac = new HMACSHA256(keyBytes);
-            var sig = hmac.ComputeHash(dataBytes);
-            return Base64UrlEncode(sig);
-        }
-
-        private static string Base64UrlEncode(byte[] input)
-        {
-            return Convert.ToBase64String(input)
-                .TrimEnd('=')
-                .Replace('+', '-')
-                .Replace('/', '_');
+            var handler = new JwtSecurityTokenHandler();
+            return handler.WriteToken(token);
         }
     }
 }

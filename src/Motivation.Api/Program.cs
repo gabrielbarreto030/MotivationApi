@@ -3,6 +3,11 @@ using Motivation.Infrastructure.Db;
 using Microsoft.EntityFrameworkCore;
 using Motivation.Domain.Interfaces;
 using Motivation.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Motivation.Infrastructure.Services;
+using Motivation.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +37,35 @@ builder.Services.AddScoped<IMotivationRepository, MotivationRepository>();
 
 // application services
 builder.Services.AddScoped<Motivation.Application.Interfaces.IAuthService, Motivation.Application.Services.AuthService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+
+// JWT authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev_secret_key_change_me";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "motivation";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "motivation";
+
+builder.Services
+    .AddAuthentication(opt =>
+    {
+        opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(opt =>
+    {
+        opt.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // add controllers
 builder.Services.AddControllers();
@@ -46,6 +80,9 @@ if (app.Environment.IsDevelopment())
 {
     // additional dev-only middleware could go here
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 var summaries = new[]
 {
