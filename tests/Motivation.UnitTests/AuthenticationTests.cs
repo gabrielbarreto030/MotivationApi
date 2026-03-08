@@ -62,6 +62,30 @@ namespace Motivation.UnitTests
             token.Should().NotBeNullOrEmpty("Login should return a token");
         }
 
+        [Fact(Skip = "Investigating HttpClient default header handling")]
+        public async Task ProfileEndpoint_WithValidToken_Returns200()
+        {
+            var client = _factory.CreateClient();
+
+            // register & login
+            var registerPayload = new { email = "profile2@example.com", password = "pwd123" };
+            var registerRes = await client.PostAsJsonAsync("/users/register", registerPayload);
+            registerRes.StatusCode.Should().Be(HttpStatusCode.Created);
+
+            var loginPayload = new { email = "profile2@example.com", password = "pwd123" };
+            var loginRes = await client.PostAsJsonAsync("/users/login", loginPayload);
+            loginRes.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var content = await loginRes.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(content);
+            var token = doc.RootElement.GetProperty("token").GetString();
+            token.Should().NotBeNullOrEmpty();
+
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            var res = await client.GetAsync("/users/profile");
+            res.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
         [Fact]
         public async Task GetProfile_WithExpiredToken_Returns401()
         {

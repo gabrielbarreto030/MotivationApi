@@ -14,10 +14,12 @@ namespace Motivation.Api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService)
+        public UsersController(IAuthService authService, ILogger<UsersController> logger)
         {
             _authService = authService;
+            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -53,6 +55,8 @@ namespace Motivation.Api.Controllers
         [HttpGet("profile")]
         public IActionResult GetProfile()
         {
+            _logger.LogInformation("UsersController profile called; Authorization header: {Header}", Request.Headers["Authorization"].ToString());
+
             var userIdClaim = User.FindFirst("sub");
             if (userIdClaim == null)
                 return Unauthorized();

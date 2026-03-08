@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
 
@@ -13,15 +14,19 @@ namespace Motivation.Api.Controllers
     public class GoalsController : ControllerBase
     {
         private readonly IGoalService _goalService;
+        private readonly ILogger<GoalsController> _logger;
 
-        public GoalsController(IGoalService goalService)
+        public GoalsController(IGoalService goalService, ILogger<GoalsController> logger)
         {
             _goalService = goalService;
+            _logger = logger;
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateGoalRequest dto)
         {
+            _logger.LogInformation("Authorization header received: {Header}", Request.Headers["Authorization"].ToString());
+
             var userIdClaim = User.FindFirst("sub");
             if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
                 return Unauthorized();
@@ -35,6 +40,17 @@ namespace Motivation.Api.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> List()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var list = await _goalService.ListByUserAsync(userId);
+            return Ok(list);
         }
     }
 }

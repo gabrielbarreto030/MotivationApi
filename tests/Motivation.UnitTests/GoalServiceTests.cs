@@ -75,5 +75,20 @@ namespace Motivation.UnitTests
             Func<Task> act = async () => await _goalService.CreateAsync(request, userId);
             await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Description*");
         }
+
+        [Fact]
+        public async Task ListByUserAsync_ReturnsGoals()
+        {
+            var userId = Guid.NewGuid();
+            // create two goals via repository directly
+            var g1 = new Goal(Guid.NewGuid(), userId, "A", "desc", GoalStatus.Pending, DateTime.UtcNow);
+            var g2 = new Goal(Guid.NewGuid(), userId, "B", "desc", GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(g1);
+            await _goalRepository.AddAsync(g2);
+
+            var results = await _goalService.ListByUserAsync(userId);
+            results.Should().HaveCount(2);
+            results.Select(r => r.Title).Should().Contain(new[] {"A","B"});
+        }
     }
 }
