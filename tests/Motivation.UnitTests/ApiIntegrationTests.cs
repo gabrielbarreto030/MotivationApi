@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Motivation.Api;
@@ -56,6 +57,40 @@ namespace Motivation.UnitTests
 
             var second = await client.PostAsJsonAsync("/users/register", payload);
             second.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task CreateGoalEndpoint_WithValidToken_CreatesGoal()
+        {
+            var client = _factory.CreateClient();
+
+            // Register and login
+            var registerPayload = new { email = "goaluser@example.com", password = "pwd123" };
+            var registerRes = await client.PostAsJsonAsync("/users/register", registerPayload);
+            registerRes.StatusCode.Should().Be(HttpStatusCode.Created);
+
+            var loginPayload = new { email = "goaluser@example.com", password = "pwd123" };
+            var loginRes = await client.PostAsJsonAsync("/users/login", loginPayload);
+            loginRes.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            var loginContent = await loginRes.Content.ReadAsStringAsync();
+            using var loginDoc = JsonDocument.Parse(loginContent);
+            var token = loginDoc.RootElement.GetProperty("token").GetString();
+
+            // Create goal with token
+            var goalPayload = new { title = "My Goal", description = "Goal description" };
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var goalRes = await client.PostAsJsonAsync("/goals", goalPayload);
+            goalRes.StatusCode.Should().Be(HttpStatusCode.Created);
+        }
+
+        [Fact]
+        public async Task CreateGoalEndpoint_WithoutToken_Returns401()
+        {
+            var client = _factory.CreateClient();
+            var goalPayload = new { title = "My Goal", description = "Goal description" };
+            var res = await client.PostAsJsonAsync("/goals", goalPayload);
+            res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
     }
 }
