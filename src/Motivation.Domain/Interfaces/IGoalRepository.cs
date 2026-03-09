@@ -8,5 +8,7 @@ namespace Motivation.Domain.Interfaces
     {
         Task AddAsync(Goal goal);
         Task<Goal[]> GetByUserAsync(Guid userId);
+        Task<Goal?> GetByIdAsync(Guid id);
+        Task UpdateAsync(Goal goal);
     }
 }

@@ -90,5 +90,79 @@ namespace Motivation.UnitTests
             results.Should().HaveCount(2);
             results.Select(r => r.Title).Should().Contain(new[] {"A","B"});
         }
+
+        [Fact]
+        public async Task UpdateAsync_ValidRequest_UpdatesGoal()
+        {
+            var userId = Guid.NewGuid();
+            var goal = new Goal(Guid.NewGuid(), userId, "Original Title", "Original Description", GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(goal);
+
+            var request = new UpdateGoalRequest("Updated Title", "Updated Description", "InProgress");
+            var result = await _goalService.UpdateAsync(goal.Id, request, userId);
+
+            result.Title.Should().Be("Updated Title");
+            result.Description.Should().Be("Updated Description");
+            result.Status.Should().Be(GoalStatus.InProgress);
+
+            // Verify it was persisted
+            var updated = await _goalRepository.GetByIdAsync(goal.Id);
+            updated.Should().NotBeNull();
+            updated!.Title.Should().Be("Updated Title");
+            updated.Description.Should().Be("Updated Description");
+        }
+
+        [Fact]
+        public async Task UpdateAsync_PartialUpdate_UpdatesOnlyProvidedFields()
+        {
+            var userId = Guid.NewGuid();
+            var goal = new Goal(Guid.NewGuid(), userId, "Original Title", "Original Description", GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(goal);
+
+            // Only update title
+            var request = new UpdateGoalRequest("New Title", null, null);
+            var result = await _goalService.UpdateAsync(goal.Id, request, userId);
+
+            result.Title.Should().Be("New Title");
+            result.Description.Should().Be("Original Description");
+            result.Status.Should().Be(GoalStatus.Pending);
+        }
+
+        [Fact]
+        public async Task UpdateAsync_GoalNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+            var request = new UpdateGoalRequest("Title", "Description", null);
+
+            Func<Task> act = async () => await _goalService.UpdateAsync(Guid.NewGuid(), request, userId);
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Goal not found*");
+        }
+
+        [Fact]
+        public async Task UpdateAsync_UnauthorizedUser_ThrowsUnauthorizedAccessException()
+        {
+            var userId = Guid.NewGuid();
+            var otherUserId = Guid.NewGuid();
+            var goal = new Goal(Guid.NewGuid(), userId, "Title", "Description", GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(goal);
+
+            var request = new UpdateGoalRequest("New Title", null, null);
+
+            Func<Task> act = async () => await _goalService.UpdateAsync(goal.Id, request, otherUserId);
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
+
+        [Fact]
+        public async Task UpdateAsync_InvalidStatus_IgnoresStatus()
+        {
+            var userId = Guid.NewGuid();
+            var goal = new Goal(Guid.NewGuid(), userId, "Title", "Description", GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(goal);
+
+            var request = new UpdateGoalRequest(null, null, "InvalidStatus");
+            var result = await _goalService.UpdateAsync(goal.Id, request, userId);
+
+            result.Status.Should().Be(GoalStatus.Pending); // Should remain unchanged
+        }
     }
 }

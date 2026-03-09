@@ -52,5 +52,30 @@ namespace Motivation.Api.Controllers
             var list = await _goalService.ListByUserAsync(userId);
             return Ok(list);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateGoalRequest dto)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                var result = await _goalService.UpdateAsync(id, dto, userId);
+                _logger.LogInformation("Goal {GoalId} updated by user {UserId}", id, userId);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request updating goal {GoalId}: {Message}", id, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized update attempt on goal {GoalId} by user {UserId}: {Message}", id, userId, ex.Message);
+                return Forbid();
+            }
+        }
     }
 }

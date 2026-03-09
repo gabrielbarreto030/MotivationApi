@@ -35,5 +35,27 @@ namespace Motivation.Application.Services
             var goals = await _goalRepository.GetByUserAsync(userId);
             return goals.Select(g => new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt)).ToArray();
         }
+
+        public async Task<UpdateGoalResponse> UpdateAsync(Guid id, UpdateGoalRequest request, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(id);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(id));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to update this goal");
+
+            // Parse Status if provided
+            GoalStatus? status = null;
+            if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<GoalStatus>(request.Status, true, out var parsedStatus))
+            {
+                status = parsedStatus;
+            }
+
+            goal.Update(request.Title, request.Description, status);
+            await _goalRepository.UpdateAsync(goal);
+
+            return new UpdateGoalResponse(goal.Id, goal.Title, goal.Description, goal.Status, goal.CreatedAt);
+        }
     }
 }

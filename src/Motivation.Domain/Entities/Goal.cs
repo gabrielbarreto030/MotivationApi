@@ -32,5 +32,29 @@ namespace Motivation.Domain.Entities
         {
             Status = newStatus;
         }
+
+        public void UpdateTitle(string newTitle)
+        {
+            if (string.IsNullOrWhiteSpace(newTitle))
+                throw new ArgumentException("Title is required", nameof(newTitle));
+            Title = newTitle;
+        }
+
+        public void UpdateDescription(string newDescription)
+        {
+            if (string.IsNullOrWhiteSpace(newDescription))
+                throw new ArgumentException("Description is required", nameof(newDescription));
+            Description = newDescription;
+        }
+
+        public void Update(string? title, string? description, GoalStatus? status)
+        {
+            if (!string.IsNullOrWhiteSpace(title))
+                UpdateTitle(title);
+            if (!string.IsNullOrWhiteSpace(description))
+                UpdateDescription(description);
+            if (status.HasValue)
+                UpdateStatus(status.Value);
+        }
     }
 }

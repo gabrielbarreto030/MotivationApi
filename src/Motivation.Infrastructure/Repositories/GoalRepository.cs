@@ -39,6 +39,20 @@ namespace Motivation.Infrastructure.Repositories
             });
         }
 
+        public async Task<Goal?> GetByIdAsync(Guid id)
+        {
+            return await _db.Goals.FirstOrDefaultAsync(g => g.Id == id);
+        }
+
+        public async Task UpdateAsync(Goal goal)
+        {
+            _db.Goals.Update(goal);
+            await _db.SaveChangesAsync();
+            // invalidate cache for the user
+            var key = GetCacheKey(goal.UserId);
+            _cache.Remove(key);
+        }
+
         private static string GetCacheKey(Guid userId) => $"goals:{userId}";
     }
 }
