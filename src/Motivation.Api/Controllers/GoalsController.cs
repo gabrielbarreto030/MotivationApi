@@ -77,5 +77,30 @@ namespace Motivation.Api.Controllers
                 return Forbid();
             }
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                await _goalService.DeleteAsync(id, userId);
+                _logger.LogInformation("Goal {GoalId} deleted by user {UserId}", id, userId);
+                return NoContent();
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request deleting goal {GoalId}: {Message}", id, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized delete attempt on goal {GoalId} by user {UserId}: {Message}", id, userId, ex.Message);
+                return Forbid();
+            }
+        }
     }
 }

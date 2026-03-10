@@ -57,5 +57,17 @@ namespace Motivation.Application.Services
 
             return new UpdateGoalResponse(goal.Id, goal.Title, goal.Description, goal.Status, goal.CreatedAt);
         }
+
+        public async Task DeleteAsync(Guid id, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(id);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(id));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to delete this goal");
+
+            await _goalRepository.DeleteAsync(goal);
+        }
     }
 }

@@ -53,6 +53,14 @@ namespace Motivation.Infrastructure.Repositories
             _cache.Remove(key);
         }
 
+        public async Task DeleteAsync(Goal goal)
+        {
+            _db.Goals.Remove(goal);
+            await _db.SaveChangesAsync();
+            var key = GetCacheKey(goal.UserId);
+            _cache.Remove(key);
+        }
+
         private static string GetCacheKey(Guid userId) => $"goals:{userId}";
     }
 }

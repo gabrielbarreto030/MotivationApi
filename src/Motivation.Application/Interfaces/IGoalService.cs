@@ -8,5 +8,6 @@ namespace Motivation.Application.Interfaces
         Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId);
         Task<CreateGoalResponse[]> ListByUserAsync(Guid userId);
         Task<UpdateGoalResponse> UpdateAsync(Guid id, UpdateGoalRequest request, Guid userId);
+        Task DeleteAsync(Guid id, Guid userId);
     }
 }

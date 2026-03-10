@@ -164,5 +164,38 @@ namespace Motivation.UnitTests
 
             result.Status.Should().Be(GoalStatus.Pending); // Should remain unchanged
         }
+
+        [Fact]
+        public async Task DeleteAsync_ValidRequest_RemovesGoal()
+        {
+            var userId = Guid.NewGuid();
+            var goal = new Goal(Guid.NewGuid(), userId, "T", "D", GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(goal);
+
+            await _goalService.DeleteAsync(goal.Id, userId);
+
+            var stored = await _goalRepository.GetByUserAsync(userId);
+            stored.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task DeleteAsync_GoalNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+            Func<Task> act = async () => await _goalService.DeleteAsync(Guid.NewGuid(), userId);
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Goal not found*");
+        }
+
+        [Fact]
+        public async Task DeleteAsync_UnauthorizedUser_ThrowsUnauthorizedAccessException()
+        {
+            var owner = Guid.NewGuid();
+            var other = Guid.NewGuid();
+            var goal = new Goal(Guid.NewGuid(), owner, "T", "D", GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(goal);
+
+            Func<Task> act = async () => await _goalService.DeleteAsync(goal.Id, other);
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
     }
 }
