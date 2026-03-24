@@ -23,24 +23,24 @@ Swagger
 # Backlog (30 dias)
 Fase 1 – Fundamentos (Dias 1–5)
 
-Dia 1: Scaffold solução + projetos (DDD structure)
-Dia 2: Configuração básica API + Swagger + HealthCheck
-Dia 3: Domain entities (User, Goal, Step, Motivation)
-Dia 4: EF Core InMemory + DbContext
-Dia 5: Repository pattern básico
+Dia 1: Scaffold solução + projetos (DDD structure) - OK 
+Dia 2: Configuração básica API + Swagger + HealthCheck - OK 
+Dia 3: Domain entities (User, Goal, Step, Motivation) - OK 
+Dia 4: EF Core InMemory + DbContext - OK 
+Dia 5: Repository pattern básico - OK 
 
 Fase 2 – Autenticação (Dias 6–8)
 
-Dia 6: Registro de usuário
-Dia 7: Login + geração JWT
-Dia 8: Proteção de endpoints com Bearer
+Dia 6: Registro de usuário - OK 
+Dia 7: Login + geração JWT - OK 
+Dia 8: Proteção de endpoints com Bearer - OK 
 
 Fase 3 – Goals (Dias 9–13)
 
-Dia 9: Criar Goal
-Dia 10: Listar Goals por usuário
-Dia 11: Atualizar Goal
-Dia 12: Deletar Goal
+Dia 9: Criar Goal - OK 
+Dia 10: Listar Goals por usuário - OK 
+Dia 11: Atualizar Goal - OK 
+Dia 12: Deletar Goal - OK 
 Dia 13: Cache para consulta de Goals
 
 Fase 4 – Steps (Dias 14–17)
