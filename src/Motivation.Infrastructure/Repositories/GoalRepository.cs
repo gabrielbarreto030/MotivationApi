@@ -41,26 +41,31 @@ namespace Motivation.Infrastructure.Repositories
 
         public async Task<Goal?> GetByIdAsync(Guid id)
         {
-            return await _db.Goals.FirstOrDefaultAsync(g => g.Id == id);
+            var key = GetIdCacheKey(id);
+            return await _cache.GetOrCreateAsync<Goal?>(key, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                return await _db.Goals.FirstOrDefaultAsync(g => g.Id == id);
+            });
         }
 
         public async Task UpdateAsync(Goal goal)
         {
             _db.Goals.Update(goal);
             await _db.SaveChangesAsync();
-            // invalidate cache for the user
-            var key = GetCacheKey(goal.UserId);
-            _cache.Remove(key);
+            _cache.Remove(GetCacheKey(goal.UserId));
+            _cache.Remove(GetIdCacheKey(goal.Id));
         }
 
         public async Task DeleteAsync(Goal goal)
         {
             _db.Goals.Remove(goal);
             await _db.SaveChangesAsync();
-            var key = GetCacheKey(goal.UserId);
-            _cache.Remove(key);
+            _cache.Remove(GetCacheKey(goal.UserId));
+            _cache.Remove(GetIdCacheKey(goal.Id));
         }
 
         private static string GetCacheKey(Guid userId) => $"goals:{userId}";
+        private static string GetIdCacheKey(Guid id) => $"goal:{id}";
     }
 }
