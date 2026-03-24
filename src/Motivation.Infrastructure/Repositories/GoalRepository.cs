@@ -42,15 +42,25 @@ namespace Motivation.Infrastructure.Repositories
         public async Task<Goal?> GetByIdAsync(Guid id)
         {
             var key = GetIdCacheKey(id);
-            return await _cache.GetOrCreateAsync<Goal?>(key, async entry =>
+            var cached = await _cache.GetOrCreateAsync<Goal?>(key, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
-                return await _db.Goals.FirstOrDefaultAsync(g => g.Id == id);
+                DetachIfTracked(id);
+                return await _db.Goals.AsNoTracking().FirstOrDefaultAsync(g => g.Id == id);
             });
+
+            if (cached == null) return null;
+
+            // Detach any tracked entity so caller can safely call Update/Delete with the returned copy
+            DetachIfTracked(id);
+
+            // Return a defensive copy to prevent external mutations from corrupting the cache
+            return new Goal(cached.Id, cached.UserId, cached.Title, cached.Description, cached.Status, cached.CreatedAt);
         }
 
         public async Task UpdateAsync(Goal goal)
         {
+            DetachIfTracked(goal.Id);
             _db.Goals.Update(goal);
             await _db.SaveChangesAsync();
             _cache.Remove(GetCacheKey(goal.UserId));
@@ -59,10 +69,19 @@ namespace Motivation.Infrastructure.Repositories
 
         public async Task DeleteAsync(Goal goal)
         {
+            DetachIfTracked(goal.Id);
             _db.Goals.Remove(goal);
             await _db.SaveChangesAsync();
             _cache.Remove(GetCacheKey(goal.UserId));
             _cache.Remove(GetIdCacheKey(goal.Id));
+        }
+
+        private void DetachIfTracked(Guid id)
+        {
+            var entry = _db.ChangeTracker.Entries<Goal>()
+                .FirstOrDefault(e => e.Entity.Id == id);
+            if (entry != null)
+                entry.State = Microsoft.EntityFrameworkCore.EntityState.Detached;
         }
 
         private static string GetCacheKey(Guid userId) => $"goals:{userId}";

@@ -39,6 +39,7 @@ builder.Services.AddScoped<IMotivationRepository, MotivationRepository>();
 builder.Services.AddScoped<Motivation.Application.Interfaces.IAuthService, Motivation.Application.Services.AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<Motivation.Application.Interfaces.IGoalService, Motivation.Application.Services.GoalService>();
+builder.Services.AddScoped<Motivation.Application.Interfaces.IStepService, Motivation.Application.Services.StepService>();
 
 // JWT authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev_secret_key_change_me";
