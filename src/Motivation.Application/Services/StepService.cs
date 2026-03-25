@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
@@ -34,6 +35,19 @@ namespace Motivation.Application.Services
             await _stepRepository.AddAsync(step);
 
             return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt);
+        }
+
+        public async Task<CreateStepResponse[]> ListByGoalAsync(Guid goalId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view steps of this goal");
+
+            var steps = await _stepRepository.GetByGoalAsync(goalId);
+            return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt)).ToArray();
         }
     }
 }

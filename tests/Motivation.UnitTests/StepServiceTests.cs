@@ -124,5 +124,70 @@ namespace Motivation.UnitTests
             var steps = await _stepRepository.GetByGoalAsync(goal.Id);
             steps.Should().HaveCount(3);
         }
+
+        [Fact]
+        public async Task ListByGoalAsync_ValidGoal_ReturnsSteps()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+
+            await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step A"), userId);
+            await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step B"), userId);
+
+            var result = await _stepService.ListByGoalAsync(goal.Id, userId);
+
+            result.Should().HaveCount(2);
+            result.Should().Contain(s => s.Title == "Step A");
+            result.Should().Contain(s => s.Title == "Step B");
+        }
+
+        [Fact]
+        public async Task ListByGoalAsync_EmptyGoal_ReturnsEmptyArray()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+
+            var result = await _stepService.ListByGoalAsync(goal.Id, userId);
+
+            result.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task ListByGoalAsync_GoalNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+
+            Func<Task> act = async () => await _stepService.ListByGoalAsync(Guid.NewGuid(), userId);
+
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Goal not found*");
+        }
+
+        [Fact]
+        public async Task ListByGoalAsync_UnauthorizedUser_ThrowsUnauthorizedAccessException()
+        {
+            var ownerId = Guid.NewGuid();
+            var otherId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(ownerId);
+
+            Func<Task> act = async () => await _stepService.ListByGoalAsync(goal.Id, otherId);
+
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
+
+        [Fact]
+        public async Task ListByGoalAsync_ReturnsCorrectFields()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            await _stepService.CreateAsync(goal.Id, new CreateStepRequest("My Step"), userId);
+
+            var result = await _stepService.ListByGoalAsync(goal.Id, userId);
+
+            result.Should().HaveCount(1);
+            result[0].GoalId.Should().Be(goal.Id);
+            result[0].Title.Should().Be("My Step");
+            result[0].IsCompleted.Should().BeFalse();
+            result[0].CompletedAt.Should().BeNull();
+        }
     }
 }
