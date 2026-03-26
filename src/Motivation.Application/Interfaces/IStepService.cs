@@ -8,5 +8,6 @@ namespace Motivation.Application.Interfaces
     {
         Task<CreateStepResponse> CreateAsync(Guid goalId, CreateStepRequest request, Guid userId);
         Task<CreateStepResponse[]> ListByGoalAsync(Guid goalId, Guid userId);
+        Task<CreateStepResponse> MarkCompletedAsync(Guid goalId, Guid stepId, Guid userId);
     }
 }

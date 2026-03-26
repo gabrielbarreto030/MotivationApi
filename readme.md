@@ -46,8 +46,8 @@ Dia 13: Cache para consulta de Goals - OK
 Fase 4 – Steps (Dias 14–17)
 
 Dia 14: Criar Step - OK
-Dia 15: Listar Steps
-Dia 16: Marcar Step como concluído
+Dia 15: Listar Steps - OK
+Dia 16: Marcar Step como concluído - OK
 Dia 17: Calcular progresso do Goal
 
 Fase 5 – Motivation Engine (Dias 18–21)

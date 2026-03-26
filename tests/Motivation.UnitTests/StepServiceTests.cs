@@ -189,5 +189,97 @@ namespace Motivation.UnitTests
             result[0].IsCompleted.Should().BeFalse();
             result[0].CompletedAt.Should().BeNull();
         }
+
+        // MarkCompletedAsync tests
+
+        [Fact]
+        public async Task MarkCompletedAsync_ValidStep_MarksAsCompleted()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step to complete"), userId);
+
+            var result = await _stepService.MarkCompletedAsync(goal.Id, created.Id, userId);
+
+            result.IsCompleted.Should().BeTrue();
+            result.CompletedAt.Should().NotBeNull();
+            result.Id.Should().Be(created.Id);
+        }
+
+        [Fact]
+        public async Task MarkCompletedAsync_GoalNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+
+            Func<Task> act = async () => await _stepService.MarkCompletedAsync(Guid.NewGuid(), Guid.NewGuid(), userId);
+
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Goal not found*");
+        }
+
+        [Fact]
+        public async Task MarkCompletedAsync_StepNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+
+            Func<Task> act = async () => await _stepService.MarkCompletedAsync(goal.Id, Guid.NewGuid(), userId);
+
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Step not found*");
+        }
+
+        [Fact]
+        public async Task MarkCompletedAsync_UnauthorizedUser_ThrowsUnauthorizedAccessException()
+        {
+            var ownerId = Guid.NewGuid();
+            var otherId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(ownerId);
+            var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step"), ownerId);
+
+            Func<Task> act = async () => await _stepService.MarkCompletedAsync(goal.Id, created.Id, otherId);
+
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
+
+        [Fact]
+        public async Task MarkCompletedAsync_AlreadyCompleted_ThrowsInvalidOperationException()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step"), userId);
+
+            await _stepService.MarkCompletedAsync(goal.Id, created.Id, userId);
+
+            Func<Task> act = async () => await _stepService.MarkCompletedAsync(goal.Id, created.Id, userId);
+
+            await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*already completed*");
+        }
+
+        [Fact]
+        public async Task MarkCompletedAsync_StepBelongsToDifferentGoal_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+            var goal1 = await CreateGoalAsync(userId, "Goal 1");
+            var goal2 = await CreateGoalAsync(userId, "Goal 2");
+            var created = await _stepService.CreateAsync(goal1.Id, new CreateStepRequest("Step"), userId);
+
+            Func<Task> act = async () => await _stepService.MarkCompletedAsync(goal2.Id, created.Id, userId);
+
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*does not belong*");
+        }
+
+        [Fact]
+        public async Task MarkCompletedAsync_PersistsCompletionInRepository()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step"), userId);
+
+            await _stepService.MarkCompletedAsync(goal.Id, created.Id, userId);
+
+            var step = await _stepRepository.GetByIdAsync(created.Id);
+            step.Should().NotBeNull();
+            step!.IsCompleted.Should().BeTrue();
+            step.CompletedAt.Should().NotBeNull();
+        }
     }
 }

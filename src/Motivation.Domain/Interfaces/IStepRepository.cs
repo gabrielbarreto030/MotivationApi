@@ -7,6 +7,7 @@ namespace Motivation.Domain.Interfaces
     public interface IStepRepository
     {
         Task AddAsync(Step step);
+        Task<Step?> GetByIdAsync(Guid stepId);
         Task<Step[]> GetByGoalAsync(Guid goalId);
         Task UpdateAsync(Step step);
     }

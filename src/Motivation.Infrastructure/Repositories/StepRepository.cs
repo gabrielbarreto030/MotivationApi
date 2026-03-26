@@ -27,6 +27,11 @@ namespace Motivation.Infrastructure.Repositories
             InValidateGoalCache(step.GoalId);
         }
 
+        public async Task<Step?> GetByIdAsync(Guid stepId)
+        {
+            return await _db.Steps.FindAsync(stepId);
+        }
+
         public async Task<Step[]> GetByGoalAsync(Guid goalId)
         {
             var key = GetCacheKey(goalId);

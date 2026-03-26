@@ -71,5 +71,35 @@ namespace Motivation.Api.Controllers
                 return Forbid();
             }
         }
+
+        [HttpPut("{stepId}/complete")]
+        public async Task<IActionResult> MarkCompleted(Guid goalId, Guid stepId)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                var result = await _stepService.MarkCompletedAsync(goalId, stepId, userId);
+                _logger.LogInformation("Step {StepId} marked as completed for goal {GoalId} by user {UserId}", stepId, goalId, userId);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request marking step {StepId} as completed: {Message}", stepId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Invalid operation marking step {StepId} as completed: {Message}", stepId, ex.Message);
+                return Conflict(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _logger.LogWarning("Unauthorized step complete attempt on goal {GoalId} by user {UserId}", goalId, userId);
+                return Forbid();
+            }
+        }
     }
 }
