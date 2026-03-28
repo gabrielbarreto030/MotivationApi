@@ -18,6 +18,7 @@ namespace Motivation.UnitTests
         private readonly AppDbContext _context;
         private readonly IMemoryCache _cache;
         private readonly GoalRepository _goalRepository;
+        private readonly StepRepository _stepRepository;
         private readonly GoalService _goalService;
 
         public GoalServiceTests()
@@ -28,13 +29,28 @@ namespace Motivation.UnitTests
             _context = new AppDbContext(options);
             _cache = new MemoryCache(new MemoryCacheOptions());
             _goalRepository = new GoalRepository(_context, _cache);
-            _goalService = new GoalService(_goalRepository);
+            _stepRepository = new StepRepository(_context, _cache);
+            _goalService = new GoalService(_goalRepository, _stepRepository);
         }
 
         public void Dispose()
         {
             _context?.Dispose();
             _cache?.Dispose();
+        }
+
+        private async Task<Goal> CreateGoalAsync(Guid userId, string title = "Goal", string description = "Desc")
+        {
+            var goal = new Goal(Guid.NewGuid(), userId, title, description, GoalStatus.Pending, DateTime.UtcNow);
+            await _goalRepository.AddAsync(goal);
+            return goal;
+        }
+
+        private async Task<Step> CreateStepAsync(Guid goalId, string title = "Step")
+        {
+            var step = new Step(Guid.NewGuid(), goalId, title);
+            await _stepRepository.AddAsync(step);
+            return step;
         }
 
         [Fact]
@@ -196,6 +212,96 @@ namespace Motivation.UnitTests
 
             Func<Task> act = async () => await _goalService.DeleteAsync(goal.Id, other);
             await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
+
+        // GetProgressAsync tests
+
+        [Fact]
+        public async Task GetProgressAsync_NoSteps_ReturnsZeroProgress()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+
+            var result = await _goalService.GetProgressAsync(goal.Id, userId);
+
+            result.GoalId.Should().Be(goal.Id);
+            result.TotalSteps.Should().Be(0);
+            result.CompletedSteps.Should().Be(0);
+            result.ProgressPercentage.Should().Be(0);
+        }
+
+        [Fact]
+        public async Task GetProgressAsync_AllStepsCompleted_Returns100Percent()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var step1 = await CreateStepAsync(goal.Id, "Step 1");
+            var step2 = await CreateStepAsync(goal.Id, "Step 2");
+            step1.MarkCompleted(DateTime.UtcNow);
+            step2.MarkCompleted(DateTime.UtcNow);
+            await _stepRepository.UpdateAsync(step1);
+            await _stepRepository.UpdateAsync(step2);
+
+            var result = await _goalService.GetProgressAsync(goal.Id, userId);
+
+            result.TotalSteps.Should().Be(2);
+            result.CompletedSteps.Should().Be(2);
+            result.ProgressPercentage.Should().Be(100);
+        }
+
+        [Fact]
+        public async Task GetProgressAsync_HalfCompleted_Returns50Percent()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var step1 = await CreateStepAsync(goal.Id, "Step 1");
+            var step2 = await CreateStepAsync(goal.Id, "Step 2");
+            step1.MarkCompleted(DateTime.UtcNow);
+            await _stepRepository.UpdateAsync(step1);
+
+            var result = await _goalService.GetProgressAsync(goal.Id, userId);
+
+            result.TotalSteps.Should().Be(2);
+            result.CompletedSteps.Should().Be(1);
+            result.ProgressPercentage.Should().Be(50);
+        }
+
+        [Fact]
+        public async Task GetProgressAsync_GoalNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+
+            Func<Task> act = async () => await _goalService.GetProgressAsync(Guid.NewGuid(), userId);
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Goal not found*");
+        }
+
+        [Fact]
+        public async Task GetProgressAsync_UnauthorizedUser_ThrowsUnauthorizedAccessException()
+        {
+            var owner = Guid.NewGuid();
+            var other = Guid.NewGuid();
+            var goal = await CreateGoalAsync(owner);
+
+            Func<Task> act = async () => await _goalService.GetProgressAsync(goal.Id, other);
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
+
+        [Fact]
+        public async Task GetProgressAsync_PartialCompletion_CorrectPercentage()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var step1 = await CreateStepAsync(goal.Id, "Step 1");
+            await CreateStepAsync(goal.Id, "Step 2");
+            await CreateStepAsync(goal.Id, "Step 3");
+            step1.MarkCompleted(DateTime.UtcNow);
+            await _stepRepository.UpdateAsync(step1);
+
+            var result = await _goalService.GetProgressAsync(goal.Id, userId);
+
+            result.TotalSteps.Should().Be(3);
+            result.CompletedSteps.Should().Be(1);
+            result.ProgressPercentage.Should().Be(33.33);
         }
     }
 }

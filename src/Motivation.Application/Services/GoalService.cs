@@ -11,10 +11,12 @@ namespace Motivation.Application.Services
     public class GoalService : IGoalService
     {
         private readonly IGoalRepository _goalRepository;
+        private readonly IStepRepository _stepRepository;
 
-        public GoalService(IGoalRepository goalRepository)
+        public GoalService(IGoalRepository goalRepository, IStepRepository stepRepository)
         {
             _goalRepository = goalRepository;
+            _stepRepository = stepRepository;
         }
 
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
@@ -68,6 +70,23 @@ namespace Motivation.Application.Services
                 throw new UnauthorizedAccessException("You don't have permission to delete this goal");
 
             await _goalRepository.DeleteAsync(goal);
+        }
+
+        public async Task<GoalProgressResponse> GetProgressAsync(Guid goalId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view progress of this goal");
+
+            var steps = await _stepRepository.GetByGoalAsync(goalId);
+            int total = steps.Length;
+            int completed = steps.Count(s => s.IsCompleted);
+            double percentage = total == 0 ? 0 : Math.Round((double)completed / total * 100, 2);
+
+            return new GoalProgressResponse(goalId, total, completed, percentage);
         }
     }
 }

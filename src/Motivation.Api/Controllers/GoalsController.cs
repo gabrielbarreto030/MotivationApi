@@ -78,6 +78,30 @@ namespace Motivation.Api.Controllers
             }
         }
 
+        [HttpGet("{id}/progress")]
+        public async Task<IActionResult> GetProgress(Guid id)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                var result = await _goalService.GetProgressAsync(id, userId);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request getting progress for goal {GoalId}: {Message}", id, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized progress access on goal {GoalId} by user {UserId}: {Message}", id, userId, ex.Message);
+                return Forbid();
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
