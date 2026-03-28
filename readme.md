@@ -48,11 +48,11 @@ Fase 4 – Steps (Dias 14–17)
 Dia 14: Criar Step - OK
 Dia 15: Listar Steps - OK
 Dia 16: Marcar Step como concluído - OK
-Dia 17: Calcular progresso do Goal
+Dia 17: Calcular progresso do Goal - OK
 
 Fase 5 – Motivation Engine (Dias 18–21)
 
-Dia 18: Adicionar Motivation
+Dia 18: Adicionar Motivation - OK
 Dia 19: Remover Motivation
 Dia 20: Serviço que gera mensagem diária
 Dia 21: Endpoint para obter motivação diária
