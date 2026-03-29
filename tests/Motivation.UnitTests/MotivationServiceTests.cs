@@ -153,5 +153,76 @@ namespace Motivation.UnitTests
             goal1Motivations.Should().HaveCount(1);
             goal2Motivations.Should().HaveCount(2);
         }
+
+        [Fact]
+        public async Task RemoveAsync_ValidRequest_DeletesMotivation()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var added = await _motivationService.AddAsync(goal.Id, new AddMotivationRequest("Keep going!"), userId);
+
+            await _motivationService.RemoveAsync(goal.Id, added.Id, userId);
+
+            var motivations = await _motivationRepository.GetByGoalAsync(goal.Id);
+            motivations.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task RemoveAsync_GoalNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+
+            Func<Task> act = async () => await _motivationService.RemoveAsync(Guid.NewGuid(), Guid.NewGuid(), userId);
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Goal not found*");
+        }
+
+        [Fact]
+        public async Task RemoveAsync_UnauthorizedUser_ThrowsUnauthorizedAccessException()
+        {
+            var ownerId = Guid.NewGuid();
+            var otherId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(ownerId);
+            var added = await _motivationService.AddAsync(goal.Id, new AddMotivationRequest("Mine!"), ownerId);
+
+            Func<Task> act = async () => await _motivationService.RemoveAsync(goal.Id, added.Id, otherId);
+            await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        }
+
+        [Fact]
+        public async Task RemoveAsync_MotivationNotFound_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+
+            Func<Task> act = async () => await _motivationService.RemoveAsync(goal.Id, Guid.NewGuid(), userId);
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*Motivation not found*");
+        }
+
+        [Fact]
+        public async Task RemoveAsync_MotivationBelongsToDifferentGoal_ThrowsArgumentException()
+        {
+            var userId = Guid.NewGuid();
+            var goal1 = await CreateGoalAsync(userId, "Goal 1");
+            var goal2 = await CreateGoalAsync(userId, "Goal 2");
+            var added = await _motivationService.AddAsync(goal1.Id, new AddMotivationRequest("For goal 1"), userId);
+
+            Func<Task> act = async () => await _motivationService.RemoveAsync(goal2.Id, added.Id, userId);
+            await act.Should().ThrowAsync<ArgumentException>().WithMessage("*does not belong*");
+        }
+
+        [Fact]
+        public async Task RemoveAsync_RemainingMotivations_StillExist()
+        {
+            var userId = Guid.NewGuid();
+            var goal = await CreateGoalAsync(userId);
+            var first = await _motivationService.AddAsync(goal.Id, new AddMotivationRequest("First"), userId);
+            var second = await _motivationService.AddAsync(goal.Id, new AddMotivationRequest("Second"), userId);
+
+            await _motivationService.RemoveAsync(goal.Id, first.Id, userId);
+
+            var motivations = await _motivationRepository.GetByGoalAsync(goal.Id);
+            motivations.Should().HaveCount(1);
+            motivations[0].Id.Should().Be(second.Id);
+        }
     }
 }

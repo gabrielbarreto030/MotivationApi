@@ -34,5 +34,24 @@ namespace Motivation.Application.Services
 
             return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text);
         }
+
+        public async Task RemoveAsync(Guid goalId, Guid motivationId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to remove motivations from this goal");
+
+            var motivation = await _motivationRepository.GetByIdAsync(motivationId);
+            if (motivation == null)
+                throw new ArgumentException("Motivation not found", nameof(motivationId));
+
+            if (motivation.GoalId != goalId)
+                throw new ArgumentException("Motivation does not belong to this goal", nameof(motivationId));
+
+            await _motivationRepository.DeleteAsync(motivationId);
+        }
     }
 }

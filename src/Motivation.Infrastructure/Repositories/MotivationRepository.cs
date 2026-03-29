@@ -26,6 +26,11 @@ namespace Motivation.Infrastructure.Repositories
             InvalidateGoalCache(motivation.GoalId);
         }
 
+        public async Task<Motivation.Domain.Entities.Motivation?> GetByIdAsync(Guid motivationId)
+        {
+            return await _db.Motivations.FindAsync(motivationId);
+        }
+
         public async Task<Motivation.Domain.Entities.Motivation[]> GetByGoalAsync(Guid goalId)
         {
             var key = GetCacheKey(goalId);
