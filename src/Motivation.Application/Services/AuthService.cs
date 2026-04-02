@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Exceptions;
 using Motivation.Application.Interfaces;
@@ -12,10 +13,12 @@ namespace Motivation.Application.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly Motivation.Application.Interfaces.IJwtService _jwtService;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository, Motivation.Application.Interfaces.IJwtService jwtService = null)
+        public AuthService(IUserRepository userRepository, ILogger<AuthService> logger, IJwtService jwtService = null)
         {
             _userRepository = userRepository;
+            _logger = logger;
             _jwtService = jwtService;
         }
 
@@ -35,6 +38,8 @@ namespace Motivation.Application.Services
             var user = new User(Guid.NewGuid(), request.Email, hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
+            _logger.LogInformation("User {UserId} registered with email '{Email}'", user.Id, user.Email);
+
             return new RegisterResponse(user.Id, user.Email);
         }
 
@@ -47,12 +52,20 @@ namespace Motivation.Application.Services
 
             var existing = await _userRepository.GetByEmailAsync(request.Email);
             if (existing == null)
+            {
+                _logger.LogWarning("Login attempt failed for email '{Email}': user not found", request.Email);
                 throw new Motivation.Application.Exceptions.AuthenticationFailedException("Invalid credentials");
+            }
 
             if (!PasswordHasher.Verify(request.Password, existing.PasswordHash))
+            {
+                _logger.LogWarning("Login attempt failed for user {UserId}: invalid password", existing.Id);
                 throw new Motivation.Application.Exceptions.AuthenticationFailedException("Invalid credentials");
+            }
 
             var token = _jwtService?.GenerateToken(existing) ?? string.Empty;
+
+            _logger.LogInformation("User {UserId} logged in successfully", existing.Id);
 
             return new LoginResponse(existing.Id, existing.Email, token);
         }

@@ -76,6 +76,12 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+// structured request logging with Serilog
+app.UseSerilogRequestLogging(opts =>
+{
+    opts.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+});
+
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();

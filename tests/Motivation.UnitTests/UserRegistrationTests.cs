@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Motivation.Application.Exceptions;
 using Motivation.Application.Services;
 using Motivation.Domain.Entities;
@@ -27,7 +29,7 @@ namespace Motivation.UnitTests
             _context = new AppDbContext(options);
             _cache = new MemoryCache(new MemoryCacheOptions());
             _userRepository = new UserRepository(_context, _cache);
-            _authService = new AuthService(_userRepository);
+            _authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance);
         }
 
         public void Dispose()

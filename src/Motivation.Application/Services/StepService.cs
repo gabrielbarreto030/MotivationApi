@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
 using Motivation.Domain.Entities;
@@ -12,11 +13,13 @@ namespace Motivation.Application.Services
     {
         private readonly IStepRepository _stepRepository;
         private readonly IGoalRepository _goalRepository;
+        private readonly ILogger<StepService> _logger;
 
-        public StepService(IStepRepository stepRepository, IGoalRepository goalRepository)
+        public StepService(IStepRepository stepRepository, IGoalRepository goalRepository, ILogger<StepService> logger)
         {
             _stepRepository = stepRepository;
             _goalRepository = goalRepository;
+            _logger = logger;
         }
 
         public async Task<CreateStepResponse> CreateAsync(Guid goalId, CreateStepRequest request, Guid userId)
@@ -34,6 +37,8 @@ namespace Motivation.Application.Services
             var step = new Step(Guid.NewGuid(), goalId, request.Title);
             await _stepRepository.AddAsync(step);
 
+            _logger.LogInformation("Step {StepId} created for goal {GoalId} by user {UserId}", step.Id, goalId, userId);
+
             return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt);
         }
 
@@ -47,6 +52,7 @@ namespace Motivation.Application.Services
                 throw new UnauthorizedAccessException("You don't have permission to view steps of this goal");
 
             var steps = await _stepRepository.GetByGoalAsync(goalId);
+            _logger.LogInformation("Listed {Count} steps for goal {GoalId} by user {UserId}", steps.Length, goalId, userId);
             return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt)).ToArray();
         }
 
@@ -71,6 +77,8 @@ namespace Motivation.Application.Services
 
             step.MarkCompleted(DateTime.UtcNow);
             await _stepRepository.UpdateAsync(step);
+
+            _logger.LogInformation("Step {StepId} marked as completed for goal {GoalId} by user {UserId}", stepId, goalId, userId);
 
             return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt);
         }

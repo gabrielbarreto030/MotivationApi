@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
 using Motivation.Domain.Interfaces;
@@ -14,11 +15,13 @@ namespace Motivation.Application.Services
 
         private readonly IGoalRepository _goalRepository;
         private readonly IMotivationRepository _motivationRepository;
+        private readonly ILogger<DailyMessageService> _logger;
 
-        public DailyMessageService(IGoalRepository goalRepository, IMotivationRepository motivationRepository)
+        public DailyMessageService(IGoalRepository goalRepository, IMotivationRepository motivationRepository, ILogger<DailyMessageService> logger)
         {
             _goalRepository = goalRepository;
             _motivationRepository = motivationRepository;
+            _logger = logger;
         }
 
         public async Task<DailyMessageResponse> GetDailyMessageAsync(Guid userId, DateOnly? date = null)
@@ -37,6 +40,8 @@ namespace Motivation.Application.Services
             var message = allTexts.Count == 0
                 ? DefaultMessage
                 : allTexts[today.DayOfYear % allTexts.Count];
+
+            _logger.LogInformation("Daily message for user {UserId} on {Date}: '{Message}'", userId, today, message);
 
             return new DailyMessageResponse(message, today);
         }

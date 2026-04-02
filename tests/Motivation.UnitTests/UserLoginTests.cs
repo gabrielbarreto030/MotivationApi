@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
 using Motivation.Application.Services;
@@ -44,7 +46,7 @@ namespace Motivation.UnitTests
             await _userRepository.AddAsync(user);
 
             var fakeJwt = new FakeJwtService();
-            var authService = new AuthService(_userRepository, fakeJwt);
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, fakeJwt);
 
             var res = await authService.LoginAsync(new LoginRequest("login@user.com", password));
             res.Token.Should().Be("fake-token");
@@ -59,7 +61,7 @@ namespace Motivation.UnitTests
             var user = new User(Guid.NewGuid(), "login2@user.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
-            var authService = new AuthService(_userRepository, new FakeJwtService());
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, new FakeJwtService());
 
             Func<Task> act = async () => await authService.LoginAsync(new LoginRequest("login2@user.com", "wrong"));
             await act.Should().ThrowAsync<Motivation.Application.Exceptions.AuthenticationFailedException>();
@@ -68,7 +70,7 @@ namespace Motivation.UnitTests
         [Fact]
         public async Task Login_NonexistentUser_Throws()
         {
-            var authService = new AuthService(_userRepository, new FakeJwtService());
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, new FakeJwtService());
             Func<Task> act = async () => await authService.LoginAsync(new LoginRequest("no@user.com", "x"));
             await act.Should().ThrowAsync<Motivation.Application.Exceptions.AuthenticationFailedException>();
         }

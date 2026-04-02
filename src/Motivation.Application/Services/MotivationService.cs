@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
 using Motivation.Domain.Interfaces;
@@ -10,11 +11,13 @@ namespace Motivation.Application.Services
     {
         private readonly IMotivationRepository _motivationRepository;
         private readonly IGoalRepository _goalRepository;
+        private readonly ILogger<MotivationService> _logger;
 
-        public MotivationService(IMotivationRepository motivationRepository, IGoalRepository goalRepository)
+        public MotivationService(IMotivationRepository motivationRepository, IGoalRepository goalRepository, ILogger<MotivationService> logger)
         {
             _motivationRepository = motivationRepository;
             _goalRepository = goalRepository;
+            _logger = logger;
         }
 
         public async Task<AddMotivationResponse> AddAsync(Guid goalId, AddMotivationRequest request, Guid userId)
@@ -31,6 +34,8 @@ namespace Motivation.Application.Services
 
             var motivation = new Domain.Entities.Motivation(Guid.NewGuid(), goalId, request.Text);
             await _motivationRepository.AddAsync(motivation);
+
+            _logger.LogInformation("Motivation {MotivationId} added to goal {GoalId} by user {UserId}", motivation.Id, goalId, userId);
 
             return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text);
         }
@@ -52,6 +57,8 @@ namespace Motivation.Application.Services
                 throw new ArgumentException("Motivation does not belong to this goal", nameof(motivationId));
 
             await _motivationRepository.DeleteAsync(motivationId);
+
+            _logger.LogInformation("Motivation {MotivationId} removed from goal {GoalId} by user {UserId}", motivationId, goalId, userId);
         }
     }
 }

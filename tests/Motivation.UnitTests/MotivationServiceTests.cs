@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Motivation.Application.DTOs;
 using Motivation.Application.Services;
 using Motivation.Domain.Entities;
@@ -29,7 +31,7 @@ namespace Motivation.UnitTests
             _cache = new MemoryCache(new MemoryCacheOptions());
             _goalRepository = new GoalRepository(_context, _cache);
             _motivationRepository = new MotivationRepository(_context, _cache);
-            _motivationService = new MotivationService(_motivationRepository, _goalRepository);
+            _motivationService = new MotivationService(_motivationRepository, _goalRepository, NullLogger<MotivationService>.Instance);
         }
 
         public void Dispose()
