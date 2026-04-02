@@ -55,7 +55,7 @@ Fase 5 – Motivation Engine (Dias 18–21)
 Dia 18: Adicionar Motivation - OK
 Dia 19: Remover Motivation - OK
 Dia 20: Serviço que gera mensagem diária - OK
-Dia 21: Endpoint para obter motivação diária
+Dia 21: Endpoint para obter motivação diária - OK
 
 Fase 6 – Qualidade & Observabilidade (Dias 22–26)
 
