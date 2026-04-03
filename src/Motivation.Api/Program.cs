@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Motivation.Infrastructure.Services;
 using Motivation.Application.Interfaces;
+using Motivation.Api.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +76,9 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+// global error handler — must be early in pipeline
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // structured request logging with Serilog
 app.UseSerilogRequestLogging(opts =>

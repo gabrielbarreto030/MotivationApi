@@ -59,8 +59,8 @@ Dia 21: Endpoint para obter motivação diária - OK
 
 Fase 6 – Qualidade & Observabilidade (Dias 22–26)
 
-Dia 22: Logging estruturado com Serilog
-Dia 23: Middleware global de erro
+Dia 22: Logging estruturado com Serilog - OK
+Dia 23: Middleware global de erro - OK
 Dia 24: Unit Tests Domain
 Dia 25: Unit Tests Application
 Dia 26: Testes de integração API

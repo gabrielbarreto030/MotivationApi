@@ -50,7 +50,7 @@ namespace Motivation.UnitTests
         }
 
         [Fact]
-        public async Task RegisterEndpoint_DuplicateEmail_ReturnsBadRequest()
+        public async Task RegisterEndpoint_DuplicateEmail_ReturnsConflict()
         {
             var client = _factory.CreateClient();
             var payload = new { email = "dup@example.com", password = "pwd" };
@@ -58,7 +58,7 @@ namespace Motivation.UnitTests
             first.StatusCode.Should().Be(HttpStatusCode.Created);
 
             var second = await client.PostAsJsonAsync("/users/register", payload);
-            second.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            second.StatusCode.Should().Be(HttpStatusCode.Conflict);
         }
 
         [Fact(Skip = "Investigating HttpClient default header handling")]
