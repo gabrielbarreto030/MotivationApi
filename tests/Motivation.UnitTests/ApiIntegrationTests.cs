@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -61,42 +62,25 @@ namespace Motivation.UnitTests
             second.StatusCode.Should().Be(HttpStatusCode.Conflict);
         }
 
-        [Fact(Skip = "Investigating HttpClient default header handling")]
+        [Fact]
         public async Task CreateGoalEndpoint_WithValidToken_CreatesGoal()
         {
             var client = _factory.CreateClient();
+            var email = $"goaluser_{Guid.NewGuid():N}@example.com";
 
-            // Register and login
-            var registerPayload = new { email = "goaluser@example.com", password = "pwd123" };
-            var registerRes = await client.PostAsJsonAsync("/users/register", registerPayload);
+            var registerRes = await client.PostAsJsonAsync("/users/register", new { email, password = "pwd123" });
             registerRes.StatusCode.Should().Be(HttpStatusCode.Created);
 
-            var loginPayload = new { email = "goaluser@example.com", password = "pwd123" };
-            var loginRes = await client.PostAsJsonAsync("/users/login", loginPayload);
+            var loginRes = await client.PostAsJsonAsync("/users/login", new { email, password = "pwd123" });
             loginRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var loginContent = await loginRes.Content.ReadAsStringAsync();
             using var loginDoc = JsonDocument.Parse(loginContent);
             var token = loginDoc.RootElement.GetProperty("token").GetString();
 
-            // Add authorization header to the same client used for login
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-            // sanity check: header should now appear in defaults
-            client.DefaultRequestHeaders.TryGetValues("Authorization", out var hdrs).Should().BeTrue();
-            _output.WriteLine("default auth headers: " + string.Join(",", hdrs ?? Array.Empty<string>()));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var goalPayload = new { title = "My Goal", description = "Goal description" };
-            var req = new HttpRequestMessage(HttpMethod.Post, "/goals")
-            {
-                Content = JsonContent.Create(goalPayload)
-            };
-            _output.WriteLine("Client default headers: " + client.DefaultRequestHeaders);
-            _output.WriteLine("Request headers before send:\n" + req.Headers.ToString());
-            // manually add authorization from default headers
-            req.Headers.Authorization = client.DefaultRequestHeaders.Authorization;
-
-            var goalRes = await client.SendAsync(req);
-            _output.WriteLine("Response status: " + goalRes.StatusCode);
+            var goalRes = await client.PostAsJsonAsync("/goals", new { title = "My Goal", description = "Goal description" });
             goalRes.StatusCode.Should().Be(HttpStatusCode.Created);
         }
 
@@ -109,43 +93,26 @@ namespace Motivation.UnitTests
             res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
-        [Fact(Skip = "Investigating HttpClient default header handling")]
+        [Fact]
         public async Task ListGoalsEndpoint_WithValidToken_ReturnsGoals()
         {
             var client = _factory.CreateClient();
-            var registerPayload = new { email = "listuser@example.com", password = "pwd123" };
-            var registerRes = await client.PostAsJsonAsync("/users/register", registerPayload);
-            registerRes.StatusCode.Should().Be(HttpStatusCode.Created);
+            var email = $"listuser_{Guid.NewGuid():N}@example.com";
 
-            var loginPayload = new { email = "listuser@example.com", password = "pwd123" };
-            var loginRes = await client.PostAsJsonAsync("/users/login", loginPayload);
+            await client.PostAsJsonAsync("/users/register", new { email, password = "pwd123" });
+            var loginRes = await client.PostAsJsonAsync("/users/login", new { email, password = "pwd123" });
             loginRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
             var loginContent = await loginRes.Content.ReadAsStringAsync();
             using var loginDoc = JsonDocument.Parse(loginContent);
             var token = loginDoc.RootElement.GetProperty("token").GetString();
 
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-            client.DefaultRequestHeaders.TryGetValues("Authorization", out var hdrs).Should().BeTrue();
-            _output.WriteLine("default auth headers: " + string.Join(",", hdrs ?? Array.Empty<string>()));
-            
-            // create two goals with explicit requests
-            for (int i = 1; i <= 2; i++)
-            {
-                var req = new HttpRequestMessage(HttpMethod.Post, "/goals")
-                {
-                    Content = JsonContent.Create(new { title = $"G{i}", description = "d" })
-                };
-                req.Headers.Authorization = client.DefaultRequestHeaders.Authorization;
-                _output.WriteLine("Sending goal creation request headers:\n" + req.Headers);
-                var res = await client.SendAsync(req);
-                _output.WriteLine("Goal creation response: " + res.StatusCode);
-            }
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var listReq = new HttpRequestMessage(HttpMethod.Get, "/goals");
-            listReq.Headers.Authorization = client.DefaultRequestHeaders.Authorization;
-            var listRes = await client.SendAsync(listReq);
-            _output.WriteLine("List response status: " + listRes.StatusCode);
+            await client.PostAsJsonAsync("/goals", new { title = "G1", description = "d" });
+            await client.PostAsJsonAsync("/goals", new { title = "G2", description = "d" });
+
+            var listRes = await client.GetAsync("/goals");
             listRes.StatusCode.Should().Be(HttpStatusCode.OK);
             var listContent = await listRes.Content.ReadAsStringAsync();
             using var listDoc = JsonDocument.Parse(listContent);

@@ -57,6 +57,8 @@ builder.Services
     })
     .AddJwtBearer(opt =>
     {
+        // Disable inbound claim mapping so "sub" stays as "sub" (controllers use User.FindFirst("sub"))
+        opt.MapInboundClaims = false;
         opt.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,

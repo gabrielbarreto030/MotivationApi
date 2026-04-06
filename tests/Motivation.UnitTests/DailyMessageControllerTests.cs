@@ -37,7 +37,7 @@ namespace Motivation.UnitTests
             res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         }
 
-        [Fact(Skip = "Investigating HttpClient default header handling")]
+        [Fact]
         public async Task GetDailyMessage_WithValidToken_Returns200WithMessageAndDate()
         {
             var client = _factory.CreateClient();
@@ -59,7 +59,7 @@ namespace Motivation.UnitTests
             msgProp.GetString().Should().NotBeNullOrWhiteSpace();
         }
 
-        [Fact(Skip = "Investigating HttpClient default header handling")]
+        [Fact]
         public async Task GetDailyMessage_WithNoMotivations_ReturnsDefaultMessage()
         {
             var client = _factory.CreateClient();
