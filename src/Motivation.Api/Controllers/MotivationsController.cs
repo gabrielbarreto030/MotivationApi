@@ -8,9 +8,13 @@ using Motivation.Application.Interfaces;
 
 namespace Motivation.Api.Controllers
 {
+    /// <summary>
+    /// Gerencia as frases motivacionais associadas a uma meta. Todos os endpoints requerem JWT.
+    /// </summary>
     [ApiController]
     [Route("goals/{goalId}/motivations")]
     [Authorize]
+    [Produces("application/json")]
     public class MotivationsController : ControllerBase
     {
         private readonly IMotivationService _motivationService;
@@ -22,7 +26,21 @@ namespace Motivation.Api.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Adiciona uma frase motivacional a uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="dto">Texto da frase motivacional.</param>
+        /// <returns>Motivação criada com id e texto.</returns>
+        /// <response code="201">Motivação adicionada com sucesso.</response>
+        /// <response code="400">Dados inválidos ou meta inexistente.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Add(Guid goalId, [FromBody] AddMotivationRequest dto)
         {
             var userIdClaim = User.FindFirst("sub");
@@ -47,7 +65,20 @@ namespace Motivation.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Remove uma frase motivacional de uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="motivationId">Id da motivação a remover.</param>
+        /// <response code="204">Motivação removida com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        /// <response code="404">Motivação não encontrada na meta.</response>
         [HttpDelete("{motivationId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Remove(Guid goalId, Guid motivationId)
         {
             var userIdClaim = User.FindFirst("sub");

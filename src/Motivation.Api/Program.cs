@@ -9,6 +9,8 @@ using System.Text;
 using Motivation.Infrastructure.Services;
 using Motivation.Application.Interfaces;
 using Motivation.Api.Middleware;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,9 +20,50 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .ReadFrom.Configuration(ctx.Configuration));
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Motivation API",
+        Version = "v1",
+        Description = "API de motivação pessoal para gerenciar metas (goals), passos (steps) e mensagens motivacionais diárias. " +
+                      "Utilize JWT Bearer para autenticar endpoints protegidos.",
+        Contact = new OpenApiContact
+        {
+            Name = "Motivation API",
+            Email = "suporte@motivation.api"
+        }
+    });
+
+    // JWT Bearer security definition — exibe botão Authorize no Swagger UI
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Insira o token JWT obtido no endpoint POST /users/login.\nExemplo: Bearer {seu_token}"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+    // Inclui comentários XML gerados a partir das doc-strings dos controllers
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+        c.IncludeXmlComments(xmlPath);
+});
 
 // health check
 builder.Services.AddHealthChecks();

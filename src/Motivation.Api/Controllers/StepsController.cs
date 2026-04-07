@@ -8,9 +8,13 @@ using Motivation.Application.Interfaces;
 
 namespace Motivation.Api.Controllers
 {
+    /// <summary>
+    /// Gerencia os passos (steps) de uma meta. Todos os endpoints requerem JWT.
+    /// </summary>
     [ApiController]
     [Route("goals/{goalId}/steps")]
     [Authorize]
+    [Produces("application/json")]
     public class StepsController : ControllerBase
     {
         private readonly IStepService _stepService;
@@ -22,7 +26,20 @@ namespace Motivation.Api.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Lista todos os passos de uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <returns>Array de passos associados à meta.</returns>
+        /// <response code="200">Lista de passos retornada com sucesso.</response>
+        /// <response code="400">GoalId inválido ou meta não encontrada.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
         [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> List(Guid goalId)
         {
             var userIdClaim = User.FindFirst("sub");
@@ -47,7 +64,21 @@ namespace Motivation.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Cria um novo passo para uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="goalId">Id da meta à qual o passo será adicionado.</param>
+        /// <param name="dto">Título do passo.</param>
+        /// <returns>Passo criado com id e dados completos.</returns>
+        /// <response code="201">Passo criado com sucesso.</response>
+        /// <response code="400">Dados inválidos ou meta inexistente.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Create(Guid goalId, [FromBody] CreateStepRequest dto)
         {
             var userIdClaim = User.FindFirst("sub");
@@ -72,7 +103,23 @@ namespace Motivation.Api.Controllers
             }
         }
 
+        /// <summary>
+        /// Marca um passo como concluído, registrando a data/hora de conclusão.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="stepId">Id do passo a concluir.</param>
+        /// <returns>Passo atualizado com IsCompleted = true e CompletedAt preenchido.</returns>
+        /// <response code="200">Passo marcado como concluído.</response>
+        /// <response code="400">StepId inválido ou passo não pertence à meta.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        /// <response code="409">Passo já estava concluído anteriormente.</response>
         [HttpPut("{stepId}/complete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> MarkCompleted(Guid goalId, Guid stepId)
         {
             var userIdClaim = User.FindFirst("sub");

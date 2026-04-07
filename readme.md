@@ -67,7 +67,7 @@ Dia 26: Testes de integração API - OK
 
 Fase 7 – Polimento (Dias 27–30)
 
-Dia 27: Documentação Swagger detalhada
+Dia 27: Documentação Swagger detalhada - OK
 Dia 28: HealthChecks avançados
 Dia 29: Melhorias SOLID & Refactors leves
 Dia 30: README final + exemplos de uso
