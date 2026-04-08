@@ -11,6 +11,9 @@ using Motivation.Application.Interfaces;
 using Motivation.Api.Middleware;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using Motivation.Infrastructure.HealthChecks;
+using Motivation.Api.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,8 +68,10 @@ builder.Services.AddSwaggerGen(c =>
         c.IncludeXmlComments(xmlPath);
 });
 
-// health check
-builder.Services.AddHealthChecks();
+// health checks — basic + custom checks with tags for readiness probes
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready", "db" })
+    .AddCheck<MemoryCacheHealthCheck>("memory-cache", tags: new[] { "ready", "cache" });
 // memory cache for quick queries
 builder.Services.AddMemoryCache();
 
@@ -163,8 +168,25 @@ app.MapGet("/weatherforecast", () =>
 .WithName("GetWeatherForecast")
 .WithOpenApi();
 
-// health endpoint
-app.MapHealthChecks("/health");
+// health endpoints — detailed JSON response for all, live and ready probes
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthCheckResponseWriter.WriteDetailedJsonResponse
+});
+
+// liveness: apenas confirma que a aplicação está rodando (sem dependências externas)
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false,
+    ResponseWriter = HealthCheckResponseWriter.WriteDetailedJsonResponse
+});
+
+// readiness: verifica DB e cache antes de aceitar tráfego
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = HealthCheckResponseWriter.WriteDetailedJsonResponse
+});
 
 // map controllers
 app.MapControllers();
