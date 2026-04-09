@@ -6,10 +6,12 @@ namespace Motivation.UnitTests.Application
 {
     public class PasswordHasherTests
     {
+        private readonly PasswordHasher _hasher = new();
+
         [Fact]
         public void Hash_ReturnsNonEmptyString()
         {
-            var hash = PasswordHasher.Hash("password");
+            var hash = _hasher.Hash("password");
 
             hash.Should().NotBeNullOrWhiteSpace();
         }
@@ -19,7 +21,7 @@ namespace Motivation.UnitTests.Application
         {
             var plain = "mysecret";
 
-            var hash = PasswordHasher.Hash(plain);
+            var hash = _hasher.Hash(plain);
 
             hash.Should().NotBe(plain);
         }
@@ -29,8 +31,8 @@ namespace Motivation.UnitTests.Application
         {
             var password = "consistent";
 
-            var hash1 = PasswordHasher.Hash(password);
-            var hash2 = PasswordHasher.Hash(password);
+            var hash1 = _hasher.Hash(password);
+            var hash2 = _hasher.Hash(password);
 
             hash1.Should().Be(hash2);
         }
@@ -38,8 +40,8 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public void Hash_DifferentPasswords_ProduceDifferentHashes()
         {
-            var hash1 = PasswordHasher.Hash("password1");
-            var hash2 = PasswordHasher.Hash("password2");
+            var hash1 = _hasher.Hash("password1");
+            var hash2 = _hasher.Hash("password2");
 
             hash1.Should().NotBe(hash2);
         }
@@ -47,7 +49,7 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public void Hash_NullInput_ReturnsEmptyString()
         {
-            var hash = PasswordHasher.Hash(null!);
+            var hash = _hasher.Hash(null!);
 
             hash.Should().Be(string.Empty);
         }
@@ -55,7 +57,7 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public void Hash_EmptyString_ReturnsSha256OfEmpty()
         {
-            var hash = PasswordHasher.Hash(string.Empty);
+            var hash = _hasher.Hash(string.Empty);
 
             // SHA256("") = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
             hash.Should().Be("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
@@ -65,9 +67,9 @@ namespace Motivation.UnitTests.Application
         public void Verify_CorrectPassword_ReturnsTrue()
         {
             var password = "mypassword";
-            var hash = PasswordHasher.Hash(password);
+            var hash = _hasher.Hash(password);
 
-            var result = PasswordHasher.Verify(password, hash);
+            var result = _hasher.Verify(password, hash);
 
             result.Should().BeTrue();
         }
@@ -75,9 +77,9 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public void Verify_WrongPassword_ReturnsFalse()
         {
-            var hash = PasswordHasher.Hash("correct");
+            var hash = _hasher.Hash("correct");
 
-            var result = PasswordHasher.Verify("incorrect", hash);
+            var result = _hasher.Verify("incorrect", hash);
 
             result.Should().BeFalse();
         }
@@ -85,9 +87,9 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public void Verify_CaseSensitive_DifferentCaseReturnsFalse()
         {
-            var hash = PasswordHasher.Hash("Password");
+            var hash = _hasher.Hash("Password");
 
-            var result = PasswordHasher.Verify("password", hash);
+            var result = _hasher.Verify("password", hash);
 
             result.Should().BeFalse();
         }
@@ -95,9 +97,9 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public void Verify_EmptyPasswordAgainstItsHash_ReturnsTrue()
         {
-            var hash = PasswordHasher.Hash(string.Empty);
+            var hash = _hasher.Hash(string.Empty);
 
-            var result = PasswordHasher.Verify(string.Empty, hash);
+            var result = _hasher.Verify(string.Empty, hash);
 
             result.Should().BeTrue();
         }

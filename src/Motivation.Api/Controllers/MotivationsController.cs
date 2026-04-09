@@ -18,11 +18,13 @@ namespace Motivation.Api.Controllers
     public class MotivationsController : ControllerBase
     {
         private readonly IMotivationService _motivationService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<MotivationsController> _logger;
 
-        public MotivationsController(IMotivationService motivationService, ILogger<MotivationsController> logger)
+        public MotivationsController(IMotivationService motivationService, ICurrentUserService currentUserService, ILogger<MotivationsController> logger)
         {
             _motivationService = motivationService;
+            _currentUserService = currentUserService;
             _logger = logger;
         }
 
@@ -43,14 +45,13 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Add(Guid goalId, [FromBody] AddMotivationRequest dto)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
             try
             {
-                var result = await _motivationService.AddAsync(goalId, dto, userId);
-                _logger.LogInformation("Motivation {MotivationId} added to goal {GoalId} by user {UserId}", result.Id, goalId, userId);
+                var result = await _motivationService.AddAsync(goalId, dto, userId.Value);
+                _logger.LogInformation("Motivation {MotivationId} added to goal {GoalId} by user {UserId}", result.Id, goalId, userId.Value);
                 return CreatedAtAction(nameof(Add), new { goalId, id = result.Id }, result);
             }
             catch (ArgumentException ex)
@@ -60,7 +61,7 @@ namespace Motivation.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning("Unauthorized motivation add attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId, ex.Message);
+                _logger.LogWarning("Unauthorized motivation add attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
                 return Forbid();
             }
         }
@@ -81,14 +82,13 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Remove(Guid goalId, Guid motivationId)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
             try
             {
-                await _motivationService.RemoveAsync(goalId, motivationId, userId);
-                _logger.LogInformation("Motivation {MotivationId} removed from goal {GoalId} by user {UserId}", motivationId, goalId, userId);
+                await _motivationService.RemoveAsync(goalId, motivationId, userId.Value);
+                _logger.LogInformation("Motivation {MotivationId} removed from goal {GoalId} by user {UserId}", motivationId, goalId, userId.Value);
                 return NoContent();
             }
             catch (ArgumentException ex)
@@ -98,7 +98,7 @@ namespace Motivation.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning("Unauthorized motivation remove attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId, ex.Message);
+                _logger.LogWarning("Unauthorized motivation remove attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
                 return Forbid();
             }
         }

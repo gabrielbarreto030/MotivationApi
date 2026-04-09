@@ -8,7 +8,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Motivation.Infrastructure.Services;
 using Motivation.Application.Interfaces;
+using Motivation.Application.Services;
 using Motivation.Api.Middleware;
+using Motivation.Api.Services;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using Motivation.Infrastructure.HealthChecks;
@@ -75,6 +77,9 @@ builder.Services.AddHealthChecks()
 // memory cache for quick queries
 builder.Services.AddMemoryCache();
 
+// http context accessor for ICurrentUserService
+builder.Services.AddHttpContextAccessor();
+
 // EF Core InMemory DbContext
 builder.Services.AddDbContext<AppDbContext>(opts => opts.UseInMemoryDatabase("MotivationDb"));
 
@@ -85,12 +90,15 @@ builder.Services.AddScoped<IStepRepository, StepRepository>();
 builder.Services.AddScoped<IMotivationRepository, MotivationRepository>();
 
 // application services
-builder.Services.AddScoped<Motivation.Application.Interfaces.IAuthService, Motivation.Application.Services.AuthService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<IGoalProgressCalculator, GoalProgressCalculator>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
-builder.Services.AddScoped<Motivation.Application.Interfaces.IGoalService, Motivation.Application.Services.GoalService>();
-builder.Services.AddScoped<Motivation.Application.Interfaces.IStepService, Motivation.Application.Services.StepService>();
-builder.Services.AddScoped<Motivation.Application.Interfaces.IMotivationService, Motivation.Application.Services.MotivationService>();
-builder.Services.AddScoped<Motivation.Application.Interfaces.IDailyMessageService, Motivation.Application.Services.DailyMessageService>();
+builder.Services.AddScoped<IGoalService, GoalService>();
+builder.Services.AddScoped<IStepService, StepService>();
+builder.Services.AddScoped<IMotivationService, MotivationService>();
+builder.Services.AddScoped<IDailyMessageService, DailyMessageService>();
 
 // JWT authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev_secret_key_change_me";

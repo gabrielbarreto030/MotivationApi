@@ -13,12 +13,18 @@ namespace Motivation.Application.Services
     {
         private readonly IGoalRepository _goalRepository;
         private readonly IStepRepository _stepRepository;
+        private readonly IGoalProgressCalculator _progressCalculator;
         private readonly ILogger<GoalService> _logger;
 
-        public GoalService(IGoalRepository goalRepository, IStepRepository stepRepository, ILogger<GoalService> logger)
+        public GoalService(
+            IGoalRepository goalRepository,
+            IStepRepository stepRepository,
+            IGoalProgressCalculator progressCalculator,
+            ILogger<GoalService> logger)
         {
             _goalRepository = goalRepository;
             _stepRepository = stepRepository;
+            _progressCalculator = progressCalculator;
             _logger = logger;
         }
 
@@ -53,12 +59,9 @@ namespace Motivation.Application.Services
             if (goal.UserId != userId)
                 throw new UnauthorizedAccessException("You don't have permission to update this goal");
 
-            // Parse Status if provided
             GoalStatus? status = null;
             if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<GoalStatus>(request.Status, true, out var parsedStatus))
-            {
                 status = parsedStatus;
-            }
 
             goal.Update(request.Title, request.Description, status);
             await _goalRepository.UpdateAsync(goal);
@@ -94,7 +97,7 @@ namespace Motivation.Application.Services
             var steps = await _stepRepository.GetByGoalAsync(goalId);
             int total = steps.Length;
             int completed = steps.Count(s => s.IsCompleted);
-            double percentage = total == 0 ? 0 : Math.Round((double)completed / total * 100, 2);
+            double percentage = _progressCalculator.Calculate(total, completed);
 
             _logger.LogInformation("Progress for goal {GoalId}: {Completed}/{Total} steps ({Percentage}%)", goalId, completed, total, percentage);
 

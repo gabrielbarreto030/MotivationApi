@@ -17,11 +17,13 @@ namespace Motivation.Api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IAuthService _authService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, ICurrentUserService currentUserService, ILogger<UsersController> logger)
         {
             _authService = authService;
+            _currentUserService = currentUserService;
             _logger = logger;
         }
 
@@ -75,11 +77,10 @@ namespace Motivation.Api.Controllers
         {
             _logger.LogInformation("UsersController profile called; Authorization header: {Header}", Request.Headers["Authorization"].ToString());
 
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null)
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            return Ok(new { userId = userIdClaim.Value, message = "Access granted with valid token" });
+            return Ok(new { userId = userId.Value.ToString(), message = "Access granted with valid token" });
         }
     }
 }

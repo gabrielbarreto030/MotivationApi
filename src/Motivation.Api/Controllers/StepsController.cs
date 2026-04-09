@@ -18,11 +18,13 @@ namespace Motivation.Api.Controllers
     public class StepsController : ControllerBase
     {
         private readonly IStepService _stepService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<StepsController> _logger;
 
-        public StepsController(IStepService stepService, ILogger<StepsController> logger)
+        public StepsController(IStepService stepService, ICurrentUserService currentUserService, ILogger<StepsController> logger)
         {
             _stepService = stepService;
+            _currentUserService = currentUserService;
             _logger = logger;
         }
 
@@ -42,14 +44,13 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> List(Guid goalId)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
             try
             {
-                var steps = await _stepService.ListByGoalAsync(goalId, userId);
-                _logger.LogInformation("Listed {Count} steps for goal {GoalId} by user {UserId}", steps.Length, goalId, userId);
+                var steps = await _stepService.ListByGoalAsync(goalId, userId.Value);
+                _logger.LogInformation("Listed {Count} steps for goal {GoalId} by user {UserId}", steps.Length, goalId, userId.Value);
                 return Ok(steps);
             }
             catch (ArgumentException ex)
@@ -59,7 +60,7 @@ namespace Motivation.Api.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                _logger.LogWarning("Unauthorized step list attempt on goal {GoalId} by user {UserId}", goalId, userId);
+                _logger.LogWarning("Unauthorized step list attempt on goal {GoalId} by user {UserId}", goalId, userId.Value);
                 return Forbid();
             }
         }
@@ -81,14 +82,13 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Create(Guid goalId, [FromBody] CreateStepRequest dto)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
             try
             {
-                var result = await _stepService.CreateAsync(goalId, dto, userId);
-                _logger.LogInformation("Step {StepId} created for goal {GoalId} by user {UserId}", result.Id, goalId, userId);
+                var result = await _stepService.CreateAsync(goalId, dto, userId.Value);
+                _logger.LogInformation("Step {StepId} created for goal {GoalId} by user {UserId}", result.Id, goalId, userId.Value);
                 return CreatedAtAction(nameof(Create), new { goalId, id = result.Id }, result);
             }
             catch (ArgumentException ex)
@@ -98,7 +98,7 @@ namespace Motivation.Api.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning("Unauthorized step creation attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId, ex.Message);
+                _logger.LogWarning("Unauthorized step creation attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
                 return Forbid();
             }
         }
@@ -122,14 +122,13 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> MarkCompleted(Guid goalId, Guid stepId)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
             try
             {
-                var result = await _stepService.MarkCompletedAsync(goalId, stepId, userId);
-                _logger.LogInformation("Step {StepId} marked as completed for goal {GoalId} by user {UserId}", stepId, goalId, userId);
+                var result = await _stepService.MarkCompletedAsync(goalId, stepId, userId.Value);
+                _logger.LogInformation("Step {StepId} marked as completed for goal {GoalId} by user {UserId}", stepId, goalId, userId.Value);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -144,7 +143,7 @@ namespace Motivation.Api.Controllers
             }
             catch (UnauthorizedAccessException)
             {
-                _logger.LogWarning("Unauthorized step complete attempt on goal {GoalId} by user {UserId}", goalId, userId);
+                _logger.LogWarning("Unauthorized step complete attempt on goal {GoalId} by user {UserId}", goalId, userId.Value);
                 return Forbid();
             }
         }

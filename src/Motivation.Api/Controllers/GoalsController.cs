@@ -19,11 +19,13 @@ namespace Motivation.Api.Controllers
     public class GoalsController : ControllerBase
     {
         private readonly IGoalService _goalService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<GoalsController> _logger;
 
-        public GoalsController(IGoalService goalService, ILogger<GoalsController> logger)
+        public GoalsController(IGoalService goalService, ICurrentUserService currentUserService, ILogger<GoalsController> logger)
         {
             _goalService = goalService;
+            _currentUserService = currentUserService;
             _logger = logger;
         }
 
@@ -41,13 +43,10 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Create([FromBody] CreateGoalRequest dto)
         {
-            _logger.LogInformation("Authorization header received: {Header}", Request.Headers["Authorization"].ToString());
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
-
-            var result = await _goalService.CreateAsync(dto, userId);
+            var result = await _goalService.CreateAsync(dto, userId.Value);
             return CreatedAtAction(nameof(Create), new { id = result.Id }, result);
         }
 
@@ -63,11 +62,10 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> List()
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            var list = await _goalService.ListByUserAsync(userId);
+            var list = await _goalService.ListByUserAsync(userId.Value);
             return Ok(list);
         }
 
@@ -88,12 +86,11 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateGoalRequest dto)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            var result = await _goalService.UpdateAsync(id, dto, userId);
-            _logger.LogInformation("Goal {GoalId} updated by user {UserId}", id, userId);
+            var result = await _goalService.UpdateAsync(id, dto, userId.Value);
+            _logger.LogInformation("Goal {GoalId} updated by user {UserId}", id, userId.Value);
             return Ok(result);
         }
 
@@ -111,11 +108,10 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProgress(Guid id)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            var result = await _goalService.GetProgressAsync(id, userId);
+            var result = await _goalService.GetProgressAsync(id, userId.Value);
             return Ok(result);
         }
 
@@ -132,12 +128,11 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            await _goalService.DeleteAsync(id, userId);
-            _logger.LogInformation("Goal {GoalId} deleted by user {UserId}", id, userId);
+            await _goalService.DeleteAsync(id, userId.Value);
+            _logger.LogInformation("Goal {GoalId} deleted by user {UserId}", id, userId.Value);
             return NoContent();
         }
     }

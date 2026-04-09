@@ -22,6 +22,7 @@ namespace Motivation.UnitTests.Application
         private readonly UserRepository _userRepository;
         private readonly AuthService _authService;
         private readonly FakeJwtService _fakeJwt;
+        private readonly PasswordHasher _hasher;
 
         public AuthServiceTests()
         {
@@ -32,7 +33,8 @@ namespace Motivation.UnitTests.Application
             _cache = new MemoryCache(new MemoryCacheOptions());
             _userRepository = new UserRepository(_context, _cache);
             _fakeJwt = new FakeJwtService();
-            _authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, _fakeJwt);
+            _hasher = new PasswordHasher();
+            _authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, _fakeJwt, _hasher);
         }
 
         public void Dispose()
@@ -139,7 +141,7 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public async Task LoginAsync_ValidCredentials_ReturnsLoginResponse()
         {
-            var hashed = PasswordHasher.Hash("mypass");
+            var hashed = _hasher.Hash("mypass");
             var user = new User(Guid.NewGuid(), "login@test.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
@@ -153,7 +155,7 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public async Task LoginAsync_ValidCredentials_ReturnsToken()
         {
-            var hashed = PasswordHasher.Hash("secret");
+            var hashed = _hasher.Hash("secret");
             var user = new User(Guid.NewGuid(), "token@test.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
@@ -165,7 +167,7 @@ namespace Motivation.UnitTests.Application
         [Fact]
         public async Task LoginAsync_WrongPassword_ThrowsAuthenticationFailedException()
         {
-            var hashed = PasswordHasher.Hash("correct");
+            var hashed = _hasher.Hash("correct");
             var user = new User(Guid.NewGuid(), "wrong@test.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 

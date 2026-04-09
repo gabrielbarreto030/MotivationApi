@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Motivation.Application.Exceptions;
+using Motivation.Application.Interfaces;
 using Motivation.Application.Services;
 using Motivation.Domain.Entities;
 using Motivation.Infrastructure.Db;
@@ -29,7 +30,7 @@ namespace Motivation.UnitTests
             _context = new AppDbContext(options);
             _cache = new MemoryCache(new MemoryCacheOptions());
             _userRepository = new UserRepository(_context, _cache);
-            _authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance);
+            _authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, new FakeJwtService(), new PasswordHasher());
         }
 
         public void Dispose()
@@ -59,6 +60,11 @@ namespace Motivation.UnitTests
 
             Func<Task> act = async () => await _authService.RegisterAsync(new Motivation.Application.DTOs.RegisterRequest("dup@user.com", "other"));
             await act.Should().ThrowAsync<EmailAlreadyInUseException>();
+        }
+
+        private class FakeJwtService : IJwtService
+        {
+            public string GenerateToken(User user) => "fake-token";
         }
     }
 }

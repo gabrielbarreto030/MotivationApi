@@ -20,6 +20,7 @@ namespace Motivation.UnitTests
         private readonly AppDbContext _context;
         private readonly IMemoryCache _cache;
         private readonly UserRepository _userRepository;
+        private readonly PasswordHasher _hasher = new();
 
         public UserLoginTests()
         {
@@ -41,12 +42,12 @@ namespace Motivation.UnitTests
         public async Task Login_WithValidCredentials_ReturnsToken()
         {
             var password = "pass123";
-            var hashed = PasswordHasher.Hash(password);
+            var hashed = _hasher.Hash(password);
             var user = new User(Guid.NewGuid(), "login@user.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
             var fakeJwt = new FakeJwtService();
-            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, fakeJwt);
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, fakeJwt, _hasher);
 
             var res = await authService.LoginAsync(new LoginRequest("login@user.com", password));
             res.Token.Should().Be("fake-token");
@@ -57,11 +58,11 @@ namespace Motivation.UnitTests
         public async Task Login_WithInvalidPassword_Throws()
         {
             var password = "pass123";
-            var hashed = PasswordHasher.Hash(password);
+            var hashed = _hasher.Hash(password);
             var user = new User(Guid.NewGuid(), "login2@user.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
-            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, new FakeJwtService());
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, new FakeJwtService(), _hasher);
 
             Func<Task> act = async () => await authService.LoginAsync(new LoginRequest("login2@user.com", "wrong"));
             await act.Should().ThrowAsync<Motivation.Application.Exceptions.AuthenticationFailedException>();
@@ -70,7 +71,7 @@ namespace Motivation.UnitTests
         [Fact]
         public async Task Login_NonexistentUser_Throws()
         {
-            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, new FakeJwtService());
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, new FakeJwtService(), _hasher);
             Func<Task> act = async () => await authService.LoginAsync(new LoginRequest("no@user.com", "x"));
             await act.Should().ThrowAsync<Motivation.Application.Exceptions.AuthenticationFailedException>();
         }

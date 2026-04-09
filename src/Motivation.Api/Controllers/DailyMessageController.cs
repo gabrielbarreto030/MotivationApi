@@ -17,11 +17,13 @@ namespace Motivation.Api.Controllers
     public class DailyMessageController : ControllerBase
     {
         private readonly IDailyMessageService _dailyMessageService;
+        private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<DailyMessageController> _logger;
 
-        public DailyMessageController(IDailyMessageService dailyMessageService, ILogger<DailyMessageController> logger)
+        public DailyMessageController(IDailyMessageService dailyMessageService, ICurrentUserService currentUserService, ILogger<DailyMessageController> logger)
         {
             _dailyMessageService = dailyMessageService;
+            _currentUserService = currentUserService;
             _logger = logger;
         }
 
@@ -38,13 +40,12 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Get()
         {
-            var userIdClaim = User.FindFirst("sub");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-                return Unauthorized();
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
 
-            var result = await _dailyMessageService.GetDailyMessageAsync(userId);
+            var result = await _dailyMessageService.GetDailyMessageAsync(userId.Value);
 
-            _logger.LogInformation("Daily message retrieved for user {UserId}: {Message}", userId, result.Message);
+            _logger.LogInformation("Daily message retrieved for user {UserId}: {Message}", userId.Value, result.Message);
 
             return Ok(result);
         }

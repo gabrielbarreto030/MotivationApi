@@ -12,6 +12,7 @@ using Motivation.Domain.Interfaces;
 using Motivation.Infrastructure.Db;
 using Motivation.Infrastructure.Repositories;
 using Xunit;
+using Motivation.Application.Interfaces;
 
 namespace Motivation.UnitTests
 {
@@ -32,7 +33,7 @@ namespace Motivation.UnitTests
             _cache = new MemoryCache(new MemoryCacheOptions());
             _goalRepository = new GoalRepository(_context, _cache);
             _stepRepository = new StepRepository(_context, _cache);
-            _goalService = new GoalService(_goalRepository, _stepRepository, NullLogger<GoalService>.Instance);
+            _goalService = new GoalService(_goalRepository, _stepRepository, new GoalProgressCalculator(), NullLogger<GoalService>.Instance);
         }
 
         public void Dispose()

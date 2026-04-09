@@ -12,19 +12,24 @@ namespace Motivation.Application.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
-        private readonly Motivation.Application.Interfaces.IJwtService _jwtService;
+        private readonly IJwtService _jwtService;
+        private readonly IPasswordHasher _passwordHasher;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository, ILogger<AuthService> logger, IJwtService jwtService = null)
+        public AuthService(
+            IUserRepository userRepository,
+            ILogger<AuthService> logger,
+            IJwtService jwtService,
+            IPasswordHasher passwordHasher)
         {
             _userRepository = userRepository;
             _logger = logger;
             _jwtService = jwtService;
+            _passwordHasher = passwordHasher;
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
         {
-            // simple validation
             if (string.IsNullOrWhiteSpace(request.Email))
                 throw new ArgumentException("Email is required", nameof(request.Email));
             if (string.IsNullOrWhiteSpace(request.Password))
@@ -34,7 +39,7 @@ namespace Motivation.Application.Services
             if (existing != null)
                 throw new EmailAlreadyInUseException(request.Email);
 
-            var hashed = PasswordHasher.Hash(request.Password);
+            var hashed = _passwordHasher.Hash(request.Password);
             var user = new User(Guid.NewGuid(), request.Email, hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
@@ -54,16 +59,16 @@ namespace Motivation.Application.Services
             if (existing == null)
             {
                 _logger.LogWarning("Login attempt failed for email '{Email}': user not found", request.Email);
-                throw new Motivation.Application.Exceptions.AuthenticationFailedException("Invalid credentials");
+                throw new AuthenticationFailedException("Invalid credentials");
             }
 
-            if (!PasswordHasher.Verify(request.Password, existing.PasswordHash))
+            if (!_passwordHasher.Verify(request.Password, existing.PasswordHash))
             {
                 _logger.LogWarning("Login attempt failed for user {UserId}: invalid password", existing.Id);
-                throw new Motivation.Application.Exceptions.AuthenticationFailedException("Invalid credentials");
+                throw new AuthenticationFailedException("Invalid credentials");
             }
 
-            var token = _jwtService?.GenerateToken(existing) ?? string.Empty;
+            var token = _jwtService.GenerateToken(existing);
 
             _logger.LogInformation("User {UserId} logged in successfully", existing.Id);
 
