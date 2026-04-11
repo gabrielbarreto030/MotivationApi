@@ -1,10 +1,10 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
 using Motivation.Domain.Entities;
-using System.Linq;
 using Motivation.Domain.Interfaces;
 
 namespace Motivation.Application.Services
@@ -13,18 +13,15 @@ namespace Motivation.Application.Services
     {
         private readonly IGoalRepository _goalRepository;
         private readonly IStepRepository _stepRepository;
-        private readonly IGoalProgressCalculator _progressCalculator;
         private readonly ILogger<GoalService> _logger;
 
         public GoalService(
             IGoalRepository goalRepository,
             IStepRepository stepRepository,
-            IGoalProgressCalculator progressCalculator,
             ILogger<GoalService> logger)
         {
             _goalRepository = goalRepository;
             _stepRepository = stepRepository;
-            _progressCalculator = progressCalculator;
             _logger = logger;
         }
 
@@ -97,7 +94,7 @@ namespace Motivation.Application.Services
             var steps = await _stepRepository.GetByGoalAsync(goalId);
             int total = steps.Length;
             int completed = steps.Count(s => s.IsCompleted);
-            double percentage = _progressCalculator.Calculate(total, completed);
+            double percentage = total == 0 ? 0 : Math.Round((double)completed / total * 100, 2);
 
             _logger.LogInformation("Progress for goal {GoalId}: {Completed}/{Total} steps ({Percentage}%)", goalId, completed, total, percentage);
 

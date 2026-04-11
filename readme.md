@@ -69,6 +69,10 @@ Dia 28: HealthChecks avançados - OK
 Dia 29: Melhorias SOLID & Refactors leves - OK
 Dia 30: README final + exemplos de uso - OK
 
+Fase 8 – Consolidação (Dias 31+)
+
+Dia 31: Refatoração de AuthService e GoalService (redução de dependências desnecessárias) - OK
+
 ---
 
 ## Estrutura do Projeto

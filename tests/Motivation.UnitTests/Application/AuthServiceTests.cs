@@ -3,10 +3,8 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging.Abstractions;
 using Motivation.Application.DTOs;
 using Motivation.Application.Exceptions;
-using Motivation.Application.Interfaces;
 using Motivation.Application.Services;
 using Motivation.Domain.Entities;
 using Motivation.Infrastructure.Db;
@@ -21,8 +19,6 @@ namespace Motivation.UnitTests.Application
         private readonly IMemoryCache _cache;
         private readonly UserRepository _userRepository;
         private readonly AuthService _authService;
-        private readonly FakeJwtService _fakeJwt;
-        private readonly PasswordHasher _hasher;
 
         public AuthServiceTests()
         {
@@ -32,9 +28,7 @@ namespace Motivation.UnitTests.Application
             _context = new AppDbContext(options);
             _cache = new MemoryCache(new MemoryCacheOptions());
             _userRepository = new UserRepository(_context, _cache);
-            _fakeJwt = new FakeJwtService();
-            _hasher = new PasswordHasher();
-            _authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance, _fakeJwt, _hasher);
+            _authService = new AuthService(_userRepository);
         }
 
         public void Dispose()
@@ -136,101 +130,94 @@ namespace Motivation.UnitTests.Application
                 .WithMessage("*Password*");
         }
 
-        // ── LoginAsync ────────────────────────────────────────────────────────
+        // ── ValidateCredentialsAsync ──────────────────────────────────────────
 
         [Fact]
-        public async Task LoginAsync_ValidCredentials_ReturnsLoginResponse()
+        public async Task ValidateCredentialsAsync_ValidCredentials_ReturnsUser()
         {
-            var hashed = _hasher.Hash("mypass");
+            var hashed = PasswordHasher.Hash("mypass");
             var user = new User(Guid.NewGuid(), "login@test.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
-            var result = await _authService.LoginAsync(new LoginRequest("login@test.com", "mypass"));
+            var result = await _authService.ValidateCredentialsAsync(new LoginRequest("login@test.com", "mypass"));
 
             result.Should().NotBeNull();
             result.Email.Should().Be("login@test.com");
-            result.UserId.Should().Be(user.Id);
+            result.Id.Should().Be(user.Id);
         }
 
         [Fact]
-        public async Task LoginAsync_ValidCredentials_ReturnsToken()
+        public async Task ValidateCredentialsAsync_ValidCredentials_UserHasCorrectEmail()
         {
-            var hashed = _hasher.Hash("secret");
+            var hashed = PasswordHasher.Hash("secret");
             var user = new User(Guid.NewGuid(), "token@test.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
-            var result = await _authService.LoginAsync(new LoginRequest("token@test.com", "secret"));
+            var result = await _authService.ValidateCredentialsAsync(new LoginRequest("token@test.com", "secret"));
 
-            result.Token.Should().Be("fake-token");
+            result.Email.Should().Be("token@test.com");
         }
 
         [Fact]
-        public async Task LoginAsync_WrongPassword_ThrowsAuthenticationFailedException()
+        public async Task ValidateCredentialsAsync_WrongPassword_ThrowsAuthenticationFailedException()
         {
-            var hashed = _hasher.Hash("correct");
+            var hashed = PasswordHasher.Hash("correct");
             var user = new User(Guid.NewGuid(), "wrong@test.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
             Func<Task> act = async () =>
-                await _authService.LoginAsync(new LoginRequest("wrong@test.com", "incorrect"));
+                await _authService.ValidateCredentialsAsync(new LoginRequest("wrong@test.com", "incorrect"));
 
             await act.Should().ThrowAsync<AuthenticationFailedException>();
         }
 
         [Fact]
-        public async Task LoginAsync_UserNotFound_ThrowsAuthenticationFailedException()
+        public async Task ValidateCredentialsAsync_UserNotFound_ThrowsAuthenticationFailedException()
         {
             Func<Task> act = async () =>
-                await _authService.LoginAsync(new LoginRequest("nobody@test.com", "pass"));
+                await _authService.ValidateCredentialsAsync(new LoginRequest("nobody@test.com", "pass"));
 
             await act.Should().ThrowAsync<AuthenticationFailedException>();
         }
 
         [Fact]
-        public async Task LoginAsync_EmptyEmail_ThrowsArgumentException()
+        public async Task ValidateCredentialsAsync_EmptyEmail_ThrowsArgumentException()
         {
             Func<Task> act = async () =>
-                await _authService.LoginAsync(new LoginRequest("", "pass"));
+                await _authService.ValidateCredentialsAsync(new LoginRequest("", "pass"));
 
             await act.Should().ThrowAsync<ArgumentException>()
                 .WithMessage("*Email*");
         }
 
         [Fact]
-        public async Task LoginAsync_WhitespaceEmail_ThrowsArgumentException()
+        public async Task ValidateCredentialsAsync_WhitespaceEmail_ThrowsArgumentException()
         {
             Func<Task> act = async () =>
-                await _authService.LoginAsync(new LoginRequest("   ", "pass"));
+                await _authService.ValidateCredentialsAsync(new LoginRequest("   ", "pass"));
 
             await act.Should().ThrowAsync<ArgumentException>()
                 .WithMessage("*Email*");
         }
 
         [Fact]
-        public async Task LoginAsync_EmptyPassword_ThrowsArgumentException()
+        public async Task ValidateCredentialsAsync_EmptyPassword_ThrowsArgumentException()
         {
             Func<Task> act = async () =>
-                await _authService.LoginAsync(new LoginRequest("user@test.com", ""));
+                await _authService.ValidateCredentialsAsync(new LoginRequest("user@test.com", ""));
 
             await act.Should().ThrowAsync<ArgumentException>()
                 .WithMessage("*Password*");
         }
 
         [Fact]
-        public async Task LoginAsync_WhitespacePassword_ThrowsArgumentException()
+        public async Task ValidateCredentialsAsync_WhitespacePassword_ThrowsArgumentException()
         {
             Func<Task> act = async () =>
-                await _authService.LoginAsync(new LoginRequest("user@test.com", "   "));
+                await _authService.ValidateCredentialsAsync(new LoginRequest("user@test.com", "   "));
 
             await act.Should().ThrowAsync<ArgumentException>()
                 .WithMessage("*Password*");
-        }
-
-        // ── Helpers ───────────────────────────────────────────────────────────
-
-        private class FakeJwtService : IJwtService
-        {
-            public string GenerateToken(User user) => "fake-token";
         }
     }
 }

@@ -1,13 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
-using Motivation.Application.Interfaces;
 
 namespace Motivation.Application.Services
 {
     // Simple SHA256 hasher for demo purposes. In production use a stronger algorithm (BCrypt/PBKDF2).
-    public class PasswordHasher : IPasswordHasher
+    public static class PasswordHasher
     {
-        public string Hash(string password)
+        public static string Hash(string password)
         {
             if (password == null) return string.Empty;
             using var sha = SHA256.Create();
@@ -19,7 +18,7 @@ namespace Motivation.Application.Services
             return sb.ToString();
         }
 
-        public bool Verify(string password, string hash)
+        public static bool Verify(string password, string hash)
         {
             return Hash(password) == hash;
         }
