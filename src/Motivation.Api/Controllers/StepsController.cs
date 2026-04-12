@@ -29,11 +29,13 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista todos os passos de uma meta do usuário autenticado.
+        /// Lista os passos de uma meta do usuário autenticado com paginação.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>
-        /// <returns>Array de passos associados à meta.</returns>
-        /// <response code="200">Lista de passos retornada com sucesso.</response>
+        /// <param name="page">Número da página (padrão: 1).</param>
+        /// <param name="pageSize">Itens por página (padrão: 10, máximo: 50).</param>
+        /// <returns>Resposta paginada com passos da meta.</returns>
+        /// <response code="200">Lista paginada de passos retornada com sucesso.</response>
         /// <response code="400">GoalId inválido ou meta não encontrada.</response>
         /// <response code="401">Token ausente ou inválido.</response>
         /// <response code="403">Meta pertence a outro usuário.</response>
@@ -42,16 +44,17 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> List(Guid goalId)
+        public async Task<IActionResult> List(Guid goalId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var steps = await _stepService.ListByGoalAsync(goalId, userId.Value);
-                _logger.LogInformation("Listed {Count} steps for goal {GoalId} by user {UserId}", steps.Length, goalId, userId.Value);
-                return Ok(steps);
+                var pagedRequest = new PagedRequest(page, pageSize);
+                var result = await _stepService.ListByGoalPagedAsync(goalId, userId.Value, pagedRequest);
+                _logger.LogInformation("Listed {Count}/{Total} steps for goal {GoalId} by user {UserId}", result.Items.Count, result.TotalCount, goalId, userId.Value);
+                return Ok(result);
             }
             catch (ArgumentException ex)
             {

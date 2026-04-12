@@ -51,22 +51,25 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista todas as metas do usuário autenticado.
+        /// Lista as metas do usuário autenticado com paginação.
         /// Resultados podem ser servidos via cache.
         /// </summary>
-        /// <returns>Lista de metas do usuário.</returns>
-        /// <response code="200">Lista retornada com sucesso (pode ser vazia).</response>
+        /// <param name="page">Número da página (padrão: 1).</param>
+        /// <param name="pageSize">Itens por página (padrão: 10, máximo: 50).</param>
+        /// <returns>Resposta paginada com metas do usuário.</returns>
+        /// <response code="200">Lista paginada retornada com sucesso.</response>
         /// <response code="401">Token ausente ou inválido.</response>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> List()
+        public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
-            var list = await _goalService.ListByUserAsync(userId.Value);
-            return Ok(list);
+            var pagedRequest = new PagedRequest(page, pageSize);
+            var result = await _goalService.ListByUserPagedAsync(userId.Value, pagedRequest);
+            return Ok(result);
         }
 
         /// <summary>

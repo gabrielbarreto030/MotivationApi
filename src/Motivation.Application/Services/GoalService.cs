@@ -47,6 +47,23 @@ namespace Motivation.Application.Services
             return goals.Select(g => new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt)).ToArray();
         }
 
+        public async Task<PagedResponse<CreateGoalResponse>> ListByUserPagedAsync(Guid userId, PagedRequest request)
+        {
+            var goals = await _goalRepository.GetByUserAsync(userId);
+            var totalCount = goals.Length;
+            var items = goals
+                .Skip((request.Page - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .Select(g => new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt))
+                .ToArray();
+
+            _logger.LogInformation(
+                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}) for user {UserId}",
+                items.Length, totalCount, request.Page, request.PageSize, userId);
+
+            return new PagedResponse<CreateGoalResponse>(items, totalCount, request.Page, request.PageSize);
+        }
+
         public async Task<UpdateGoalResponse> UpdateAsync(Guid id, UpdateGoalRequest request, Guid userId)
         {
             var goal = await _goalRepository.GetByIdAsync(id);

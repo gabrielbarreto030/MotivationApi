@@ -56,6 +56,30 @@ namespace Motivation.Application.Services
             return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt)).ToArray();
         }
 
+        public async Task<PagedResponse<CreateStepResponse>> ListByGoalPagedAsync(Guid goalId, Guid userId, PagedRequest request)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view steps of this goal");
+
+            var steps = await _stepRepository.GetByGoalAsync(goalId);
+            var totalCount = steps.Length;
+            var items = steps
+                .Skip((request.Page - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt))
+                .ToArray();
+
+            _logger.LogInformation(
+                "Listed {Count}/{Total} steps (page {Page}, pageSize {PageSize}) for goal {GoalId} by user {UserId}",
+                items.Length, totalCount, request.Page, request.PageSize, goalId, userId);
+
+            return new PagedResponse<CreateStepResponse>(items, totalCount, request.Page, request.PageSize);
+        }
+
         public async Task<CreateStepResponse> MarkCompletedAsync(Guid goalId, Guid stepId, Guid userId)
         {
             var goal = await _goalRepository.GetByIdAsync(goalId);

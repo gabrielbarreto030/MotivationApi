@@ -167,7 +167,10 @@ public class ApiFlowIntegrationTests : IClassFixture<MotivationApiFactory>
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await res.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(content);
-        doc.RootElement.GetArrayLength().Should().BeGreaterThanOrEqualTo(2);
+        doc.RootElement.GetProperty("items").GetArrayLength().Should().BeGreaterThanOrEqualTo(2);
+        doc.RootElement.TryGetProperty("totalCount", out _).Should().BeTrue();
+        doc.RootElement.TryGetProperty("page", out _).Should().BeTrue();
+        doc.RootElement.TryGetProperty("totalPages", out _).Should().BeTrue();
     }
 
     [Fact]
@@ -242,7 +245,8 @@ public class ApiFlowIntegrationTests : IClassFixture<MotivationApiFactory>
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await res.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(content);
-        doc.RootElement.GetArrayLength().Should().BeGreaterThanOrEqualTo(2);
+        doc.RootElement.GetProperty("items").GetArrayLength().Should().BeGreaterThanOrEqualTo(2);
+        doc.RootElement.TryGetProperty("totalCount", out _).Should().BeTrue();
     }
 
     [Fact]
@@ -399,7 +403,8 @@ public class ApiFlowIntegrationTests : IClassFixture<MotivationApiFactory>
         var listRes = await client.GetAsync("/goals");
         listRes.StatusCode.Should().Be(HttpStatusCode.OK);
         using var listDoc = JsonDocument.Parse(await listRes.Content.ReadAsStringAsync());
-        listDoc.RootElement.GetArrayLength().Should().Be(0);
+        listDoc.RootElement.GetProperty("items").GetArrayLength().Should().Be(0);
+        listDoc.RootElement.GetProperty("totalCount").GetInt32().Should().Be(0);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
