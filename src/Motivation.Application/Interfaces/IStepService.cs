@@ -9,6 +9,7 @@ namespace Motivation.Application.Interfaces
         Task<CreateStepResponse> CreateAsync(Guid goalId, CreateStepRequest request, Guid userId);
         Task<CreateStepResponse[]> ListByGoalAsync(Guid goalId, Guid userId);
         Task<PagedResponse<CreateStepResponse>> ListByGoalPagedAsync(Guid goalId, Guid userId, PagedRequest request);
+        Task<PagedResponse<CreateStepResponse>> ListByGoalFilteredAsync(Guid goalId, Guid userId, StepFilterRequest request);
         Task<CreateStepResponse> MarkCompletedAsync(Guid goalId, Guid stepId, Guid userId);
     }
 }

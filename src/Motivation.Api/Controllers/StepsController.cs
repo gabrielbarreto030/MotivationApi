@@ -29,11 +29,12 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista os passos de uma meta do usuário autenticado com paginação.
+        /// Lista os passos de uma meta com paginação e filtro opcional por status de conclusão.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10, máximo: 50).</param>
+        /// <param name="isCompleted">Filtrar por conclusão: true = concluídos, false = pendentes (opcional).</param>
         /// <returns>Resposta paginada com passos da meta.</returns>
         /// <response code="200">Lista paginada de passos retornada com sucesso.</response>
         /// <response code="400">GoalId inválido ou meta não encontrada.</response>
@@ -44,16 +45,22 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> List(Guid goalId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> List(
+            Guid goalId,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] bool? isCompleted = null)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var pagedRequest = new PagedRequest(page, pageSize);
-                var result = await _stepService.ListByGoalPagedAsync(goalId, userId.Value, pagedRequest);
-                _logger.LogInformation("Listed {Count}/{Total} steps for goal {GoalId} by user {UserId}", result.Items.Count, result.TotalCount, goalId, userId.Value);
+                var filterRequest = new StepFilterRequest(page, pageSize, isCompleted);
+                var result = await _stepService.ListByGoalFilteredAsync(goalId, userId.Value, filterRequest);
+                _logger.LogInformation(
+                    "Listed {Count}/{Total} steps for goal {GoalId} by user {UserId} (isCompleted: {IsCompleted})",
+                    result.Items.Count, result.TotalCount, goalId, userId.Value, isCompleted?.ToString() ?? "all");
                 return Ok(result);
             }
             catch (ArgumentException ex)

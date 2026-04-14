@@ -51,24 +51,32 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista as metas do usuário autenticado com paginação.
-        /// Resultados podem ser servidos via cache.
+        /// Lista as metas do usuário autenticado com paginação e filtro opcional por status.
         /// </summary>
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10, máximo: 50).</param>
+        /// <param name="status">Filtrar por status: Pending, InProgress, Completed, Cancelled (opcional).</param>
         /// <returns>Resposta paginada com metas do usuário.</returns>
         /// <response code="200">Lista paginada retornada com sucesso.</response>
         /// <response code="401">Token ausente ou inválido.</response>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> List([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> List(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? status = null)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
-            var pagedRequest = new PagedRequest(page, pageSize);
-            var result = await _goalService.ListByUserPagedAsync(userId.Value, pagedRequest);
+            Motivation.Domain.Entities.GoalStatus? statusFilter = null;
+            if (!string.IsNullOrWhiteSpace(status) &&
+                Enum.TryParse<Motivation.Domain.Entities.GoalStatus>(status, ignoreCase: true, out var parsed))
+                statusFilter = parsed;
+
+            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter);
+            var result = await _goalService.ListByUserFilteredAsync(userId.Value, filterRequest);
             return Ok(result);
         }
 

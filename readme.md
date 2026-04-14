@@ -72,6 +72,8 @@ Dia 30: README final + exemplos de uso - OK
 Fase 8 – Consolidação (Dias 31+)
 
 Dia 31: Refatoração de AuthService e GoalService (redução de dependências desnecessárias) - OK
+Dia 32: Paginação nas listagens de Goals e Steps - OK
+Dia 33: Filtros avançados nas listagens (Goals por status, Steps por isCompleted) - OK
 
 ---
 
