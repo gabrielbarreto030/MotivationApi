@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -91,21 +92,35 @@ namespace Motivation.Application.Services
 
             var steps = await _stepRepository.GetByGoalAsync(goalId);
 
-            var filtered = request.IsCompleted.HasValue
-                ? steps.Where(s => s.IsCompleted == request.IsCompleted.Value).ToArray()
+            IEnumerable<Step> filtered = request.IsCompleted.HasValue
+                ? steps.Where(s => s.IsCompleted == request.IsCompleted.Value)
                 : steps;
 
-            var totalCount = filtered.Length;
-            var items = filtered
+            IEnumerable<Step> sorted = request.SortBy switch
+            {
+                "iscompleted" => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(s => s.IsCompleted)
+                    : filtered.OrderBy(s => s.IsCompleted),
+                "completedat" => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(s => s.CompletedAt)
+                    : filtered.OrderBy(s => s.CompletedAt),
+                _ => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(s => s.Title)
+                    : filtered.OrderBy(s => s.Title)
+            };
+
+            var sortedList = sorted.ToArray();
+            var totalCount = sortedList.Length;
+            var items = sortedList
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt))
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} steps (page {Page}, pageSize {PageSize}, isCompleted: {IsCompleted}) for goal {GoalId} by user {UserId}",
+                "Listed {Count}/{Total} steps (page {Page}, pageSize {PageSize}, isCompleted: {IsCompleted}, sortBy: {SortBy}, sortOrder: {SortOrder}) for goal {GoalId} by user {UserId}",
                 items.Length, totalCount, request.Page, request.PageSize,
-                request.IsCompleted?.ToString() ?? "all", goalId, userId);
+                request.IsCompleted?.ToString() ?? "all", request.SortBy, request.SortOrder, goalId, userId);
 
             return new PagedResponse<CreateStepResponse>(items, totalCount, request.Page, request.PageSize);
         }

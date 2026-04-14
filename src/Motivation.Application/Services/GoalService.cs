@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -68,21 +69,35 @@ namespace Motivation.Application.Services
         {
             var goals = await _goalRepository.GetByUserAsync(userId);
 
-            var filtered = request.Status.HasValue
-                ? goals.Where(g => g.Status == request.Status.Value).ToArray()
+            IEnumerable<Goal> filtered = request.Status.HasValue
+                ? goals.Where(g => g.Status == request.Status.Value)
                 : goals;
 
-            var totalCount = filtered.Length;
-            var items = filtered
+            IEnumerable<Goal> sorted = request.SortBy switch
+            {
+                "title" => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(g => g.Title)
+                    : filtered.OrderBy(g => g.Title),
+                "status" => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(g => (int)g.Status)
+                    : filtered.OrderBy(g => (int)g.Status),
+                _ => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(g => g.CreatedAt)
+                    : filtered.OrderBy(g => g.CreatedAt)
+            };
+
+            var sortedList = sorted.ToArray();
+            var totalCount = sortedList.Length;
+            var items = sortedList
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(g => new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt))
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}) for user {UserId}",
+                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}, sortBy: {SortBy}, sortOrder: {SortOrder}) for user {UserId}",
                 items.Length, totalCount, request.Page, request.PageSize,
-                request.Status?.ToString() ?? "all", userId);
+                request.Status?.ToString() ?? "all", request.SortBy, request.SortOrder, userId);
 
             return new PagedResponse<CreateGoalResponse>(items, totalCount, request.Page, request.PageSize);
         }
