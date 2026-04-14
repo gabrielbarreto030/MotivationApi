@@ -1,160 +1,160 @@
 # Motivation API
 
-API REST para sistema de motivação pessoal, construída com .NET 8 seguindo os princípios de DDD (Domain-Driven Design) e SOLID.
+REST API for a personal motivation system, built with .NET 8 following DDD (Domain-Driven Design) and SOLID principles.
 
-## Tecnologias
+## Technologies
 
-- **.NET 8** – Framework principal
-- **DDD** – Domain-Driven Design (Domain, Application, Infrastructure, API)
-- **EF Core InMemory** – Persistência em memória
-- **JWT Bearer** – Autenticação via tokens
-- **Serilog** – Logging estruturado (console + arquivo)
-- **IMemoryCache** – Cache de consultas rápidas
-- **Swagger/OpenAPI** – Documentação interativa
-- **HealthChecks** – Monitoramento de saúde da aplicação
-- **xUnit** – Testes unitários e de integração
-
----
-
-# Backlog (30 dias)
-
-Fase 1 – Fundamentos (Dias 1–5)
-
-Dia 1: Scaffold solução + projetos (DDD structure) - OK
-Dia 2: Configuração básica API + Swagger + HealthCheck - OK
-Dia 3: Domain entities (User, Goal, Step, Motivation) - OK
-Dia 4: EF Core InMemory + DbContext - OK
-Dia 5: Repository pattern básico - OK
-
-Fase 2 – Autenticação (Dias 6–8)
-
-Dia 6: Registro de usuário - OK
-Dia 7: Login + geração JWT - OK
-Dia 8: Proteção de endpoints com Bearer - OK
-
-Fase 3 – Goals (Dias 9–13)
-
-Dia 9: Criar Goal - OK
-Dia 10: Listar Goals por usuário - OK
-Dia 11: Atualizar Goal - OK
-Dia 12: Deletar Goal - OK
-Dia 13: Cache para consulta de Goals - OK
-
-Fase 4 – Steps (Dias 14–17)
-
-Dia 14: Criar Step - OK
-Dia 15: Listar Steps - OK
-Dia 16: Marcar Step como concluído - OK
-Dia 17: Calcular progresso do Goal - OK
-
-Fase 5 – Motivation Engine (Dias 18–21)
-
-Dia 18: Adicionar Motivation - OK
-Dia 19: Remover Motivation - OK
-Dia 20: Serviço que gera mensagem diária - OK
-Dia 21: Endpoint para obter motivação diária - OK
-
-Fase 6 – Qualidade & Observabilidade (Dias 22–26)
-
-Dia 22: Logging estruturado com Serilog - OK
-Dia 23: Middleware global de erro - OK
-Dia 24: Unit Tests Domain - OK
-Dia 25: Unit Tests Application - OK
-Dia 26: Testes de integração API - OK
-
-Fase 7 – Polimento (Dias 27–30)
-
-Dia 27: Documentação Swagger detalhada - OK
-Dia 28: HealthChecks avançados - OK
-Dia 29: Melhorias SOLID & Refactors leves - OK
-Dia 30: README final + exemplos de uso - OK
-
-Fase 8 – Consolidação (Dias 31+)
-
-Dia 31: Refatoração de AuthService e GoalService (redução de dependências desnecessárias) - OK
-Dia 32: Paginação nas listagens de Goals e Steps - OK
-Dia 33: Filtros avançados nas listagens (Goals por status, Steps por isCompleted) - OK
+- **.NET 8** - Main framework
+- **DDD** - Domain-Driven Design (Domain, Application, Infrastructure, API)
+- **EF Core InMemory** - In-memory persistence
+- **JWT Bearer** - Token-based authentication
+- **Serilog** - Structured logging (console + file)
+- **IMemoryCache** - Fast query caching
+- **Swagger/OpenAPI** - Interactive documentation
+- **HealthChecks** - Application health monitoring
+- **xUnit** - Unit and integration tests
 
 ---
 
-## Estrutura do Projeto
+# Backlog (30 days)
 
-```
+Phase 1 - Foundations (Days 1-5)
+
+Day 1: Solution + project scaffold (DDD structure) - OK
+Day 2: Basic API setup + Swagger + HealthCheck - OK
+Day 3: Domain entities (User, Goal, Step, Motivation) - OK
+Day 4: EF Core InMemory + DbContext - OK
+Day 5: Basic repository pattern - OK
+
+Phase 2 - Authentication (Days 6-8)
+
+Day 6: User registration - OK
+Day 7: Login + JWT generation - OK
+Day 8: Protect endpoints with Bearer auth - OK
+
+Phase 3 - Goals (Days 9-13)
+
+Day 9: Create Goal - OK
+Day 10: List Goals by user - OK
+Day 11: Update Goal - OK
+Day 12: Delete Goal - OK
+Day 13: Cache for Goal queries - OK
+
+Phase 4 - Steps (Days 14-17)
+
+Day 14: Create Step - OK
+Day 15: List Steps - OK
+Day 16: Mark Step as completed - OK
+Day 17: Calculate Goal progress - OK
+
+Phase 5 - Motivation Engine (Days 18-21)
+
+Day 18: Add Motivation - OK
+Day 19: Remove Motivation - OK
+Day 20: Service that generates the daily message - OK
+Day 21: Endpoint to get the daily motivation - OK
+
+Phase 6 - Quality & Observability (Days 22-26)
+
+Day 22: Structured logging with Serilog - OK
+Day 23: Global error middleware - OK
+Day 24: Domain unit tests - OK
+Day 25: Application unit tests - OK
+Day 26: API integration tests - OK
+
+Phase 7 - Polishing (Days 27-30)
+
+Day 27: Detailed Swagger documentation - OK
+Day 28: Advanced HealthChecks - OK
+Day 29: SOLID improvements & light refactors - OK
+Day 30: Final README + usage examples - OK
+
+Phase 8 - Consolidation (Days 31+)
+
+Day 31: Refactor AuthService and GoalService (remove unnecessary dependencies) - OK
+Day 32: Pagination in Goal and Step listings - OK
+Day 33: Advanced listing filters (Goals by status, Steps by isCompleted) - OK
+
+---
+
+## Project Structure
+
+```text
 DOTNET/
-├── src/
-│   ├── Motivation.Api/                  # Camada de apresentação (Controllers, Middleware)
-│   │   ├── Controllers/
-│   │   │   ├── UsersController.cs
-│   │   │   ├── GoalsController.cs
-│   │   │   ├── StepsController.cs
-│   │   │   ├── MotivationsController.cs
-│   │   │   └── DailyMessageController.cs
-│   │   ├── Middleware/
-│   │   │   └── GlobalExceptionMiddleware.cs
-│   │   ├── HealthChecks/
-│   │   │   └── HealthCheckResponseWriter.cs
-│   │   ├── Models/
-│   │   │   ├── LoginRequestDto.cs
-│   │   │   └── RegisterRequestDto.cs
-│   │   ├── Services/
-│   │   │   └── CurrentUserService.cs
-│   │   └── Program.cs
-│   │
-│   ├── Motivation.Application/          # Camada de aplicação (Use Cases, DTOs, Interfaces)
-│   │   ├── DTOs/
-│   │   ├── Interfaces/
-│   │   ├── Services/
-│   │   └── Exceptions/
-│   │
-│   ├── Motivation.Domain/               # Camada de domínio (Entidades, Regras de Negócio)
-│   │   ├── Entities/
-│   │   │   ├── User.cs
-│   │   │   ├── Goal.cs
-│   │   │   ├── Step.cs
-│   │   │   ├── Motivation.cs
-│   │   │   └── GoalStatus.cs
-│   │   └── Interfaces/                  # Contratos de repositório
-│   │
-│   └── Motivation.Infrastructure/       # Camada de infraestrutura (EF Core, JWT, Cache)
-│       ├── Db/
-│       │   └── AppDbContext.cs
-│       ├── Repositories/
-│       ├── Services/
-│       │   └── JwtService.cs
-│       └── HealthChecks/
-│
-└── tests/
-    └── Motivation.UnitTests/            # Testes unitários e de integração
+|-- src/
+|   |-- Motivation.Api/                  # Presentation layer (Controllers, Middleware)
+|   |   |-- Controllers/
+|   |   |   |-- UsersController.cs
+|   |   |   |-- GoalsController.cs
+|   |   |   |-- StepsController.cs
+|   |   |   |-- MotivationsController.cs
+|   |   |   `-- DailyMessageController.cs
+|   |   |-- Middleware/
+|   |   |   `-- GlobalExceptionMiddleware.cs
+|   |   |-- HealthChecks/
+|   |   |   `-- HealthCheckResponseWriter.cs
+|   |   |-- Models/
+|   |   |   |-- LoginRequestDto.cs
+|   |   |   `-- RegisterRequestDto.cs
+|   |   |-- Services/
+|   |   |   `-- CurrentUserService.cs
+|   |   `-- Program.cs
+|   |
+|   |-- Motivation.Application/          # Application layer (Use Cases, DTOs, Interfaces)
+|   |   |-- DTOs/
+|   |   |-- Interfaces/
+|   |   |-- Services/
+|   |   `-- Exceptions/
+|   |
+|   |-- Motivation.Domain/               # Domain layer (Entities, Business Rules)
+|   |   |-- Entities/
+|   |   |   |-- User.cs
+|   |   |   |-- Goal.cs
+|   |   |   |-- Step.cs
+|   |   |   |-- Motivation.cs
+|   |   |   `-- GoalStatus.cs
+|   |   `-- Interfaces/                  # Repository contracts
+|   |
+|   `-- Motivation.Infrastructure/       # Infrastructure layer (EF Core, JWT, Cache)
+|       |-- Db/
+|       |   `-- AppDbContext.cs
+|       |-- Repositories/
+|       |-- Services/
+|       |   `-- JwtService.cs
+|       `-- HealthChecks/
+|
+`-- tests/
+    `-- Motivation.UnitTests/            # Unit and integration tests
 ```
 
 ---
 
-## Como Executar
+## How to Run
 
-### Pré-requisitos
+### Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
-### Rodando a API
+### Running the API
 
 ```bash
-# Clonar o repositório
-git clone <url-do-repositorio>
+# Clone the repository
+git clone <repository-url>
 cd DOTNET
 
-# Restaurar dependências
+# Restore dependencies
 dotnet restore
 
-# Executar a API
+# Run the API
 dotnet run --project src/Motivation.Api
 
-# A API estará disponível em:
+# The API will be available at:
 # http://localhost:5000
 # https://localhost:5001
 # Swagger UI: http://localhost:5000/swagger
 ```
 
-### Rodando os Testes
+### Running the Tests
 
 ```bash
 dotnet test
@@ -162,7 +162,7 @@ dotnet test
 
 ---
 
-## Configuração
+## Configuration
 
 `src/Motivation.Api/appsettings.json`:
 
@@ -195,122 +195,122 @@ dotnet test
 
 ---
 
-## Endpoints da API
+## API Endpoints
 
-### Autenticação
+### Authentication
 
-| Método | Rota              | Auth | Descrição                    |
-|--------|-------------------|------|------------------------------|
-| POST   | `/users/register` | Não  | Registrar novo usuário       |
-| POST   | `/users/login`    | Não  | Login e obter token JWT      |
-| GET    | `/users/profile`  | Sim  | Perfil do usuário autenticado |
+| Method | Route             | Auth | Description                   |
+|--------|-------------------|------|-------------------------------|
+| POST   | `/users/register` | No   | Register a new user           |
+| POST   | `/users/login`    | No   | Log in and get a JWT token    |
+| GET    | `/users/profile`  | Yes  | Authenticated user profile    |
 
-### Goals (Metas)
+### Goals
 
-| Método | Rota                    | Auth | Descrição                         |
-|--------|-------------------------|------|-----------------------------------|
-| POST   | `/goals`                | Sim  | Criar nova meta                   |
-| GET    | `/goals`                | Sim  | Listar metas do usuário           |
-| PUT    | `/goals/{id}`           | Sim  | Atualizar meta                    |
-| DELETE | `/goals/{id}`           | Sim  | Deletar meta                      |
-| GET    | `/goals/{id}/progress`  | Sim  | Calcular progresso da meta        |
+| Method | Route                   | Auth | Description                    |
+|--------|-------------------------|------|--------------------------------|
+| POST   | `/goals`                | Yes  | Create a new goal              |
+| GET    | `/goals`                | Yes  | List the user's goals          |
+| PUT    | `/goals/{id}`           | Yes  | Update a goal                  |
+| DELETE | `/goals/{id}`           | Yes  | Delete a goal                  |
+| GET    | `/goals/{id}/progress`  | Yes  | Calculate goal progress        |
 
-### Steps (Passos)
+### Steps
 
-| Método | Rota                                      | Auth | Descrição                    |
-|--------|-------------------------------------------|------|------------------------------|
-| POST   | `/goals/{goalId}/steps`                   | Sim  | Criar passo para uma meta    |
-| GET    | `/goals/{goalId}/steps`                   | Sim  | Listar passos de uma meta    |
-| PUT    | `/goals/{goalId}/steps/{stepId}/complete` | Sim  | Marcar passo como concluído  |
+| Method | Route                                     | Auth | Description                    |
+|--------|-------------------------------------------|------|--------------------------------|
+| POST   | `/goals/{goalId}/steps`                   | Yes  | Create a step for a goal       |
+| GET    | `/goals/{goalId}/steps`                   | Yes  | List a goal's steps            |
+| PUT    | `/goals/{goalId}/steps/{stepId}/complete` | Yes  | Mark a step as completed       |
 
-### Motivations (Frases Motivacionais)
+### Motivations
 
-| Método | Rota                                           | Auth | Descrição                         |
-|--------|------------------------------------------------|------|-----------------------------------|
-| POST   | `/goals/{goalId}/motivations`                  | Sim  | Adicionar frase motivacional      |
-| DELETE | `/goals/{goalId}/motivations/{motivationId}`   | Sim  | Remover frase motivacional        |
+| Method | Route                                          | Auth | Description                    |
+|--------|------------------------------------------------|------|--------------------------------|
+| POST   | `/goals/{goalId}/motivations`                  | Yes  | Add a motivational phrase      |
+| DELETE | `/goals/{goalId}/motivations/{motivationId}`   | Yes  | Remove a motivational phrase   |
 
-### Mensagem Diária
+### Daily Message
 
-| Método | Rota             | Auth | Descrição                                  |
-|--------|------------------|------|--------------------------------------------|
-| GET    | `/daily-message` | Sim  | Obter mensagem motivacional do dia         |
+| Method | Route            | Auth | Description                         |
+|--------|------------------|------|-------------------------------------|
+| GET    | `/daily-message` | Yes  | Get the motivational message of the day |
 
 ### Health Checks
 
-| Método | Rota            | Auth | Descrição                              |
-|--------|-----------------|------|----------------------------------------|
-| GET    | `/health`       | Não  | Status completo (DB + Cache)           |
-| GET    | `/health/live`  | Não  | Liveness probe                         |
-| GET    | `/health/ready` | Não  | Readiness probe (DB + Cache)           |
+| Method | Route            | Auth | Description                    |
+|--------|-----------------|------|--------------------------------|
+| GET    | `/health`       | No   | Full status (DB + Cache)       |
+| GET    | `/health/live`  | No   | Liveness probe                 |
+| GET    | `/health/ready` | No   | Readiness probe (DB + Cache)   |
 
 ---
 
-## Exemplos de Uso
+## Usage Examples
 
-### 1. Registrar Usuário
+### 1. Register a User
 
 ```bash
 curl -X POST http://localhost:5000/users/register \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "joao@exemplo.com",
-    "password": "Senha@123"
+    "email": "joao@example.com",
+    "password": "Password@123"
   }'
 ```
 
-**Resposta 201 Created:**
+**201 Created response:**
 ```json
 {
   "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "email": "joao@exemplo.com"
+  "email": "joao@example.com"
 }
 ```
 
 ---
 
-### 2. Fazer Login
+### 2. Log In
 
 ```bash
 curl -X POST http://localhost:5000/users/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "joao@exemplo.com",
-    "password": "Senha@123"
+    "email": "joao@example.com",
+    "password": "Password@123"
   }'
 ```
 
-**Resposta 200 OK:**
+**200 OK response:**
 ```json
 {
   "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "email": "joao@exemplo.com",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmE4NWY2NC01NzE3LTQ1NjItYjNmYy0yYzk2M2Y2NmFmYTYiLCJlbWFpbCI6ImpvYW9AZXhlbXBsby5jb20iLCJleHAiOjE3MTMxNjgwMDB9.abc123"
+  "email": "joao@example.com",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmE4NWY2NC01NzE3LTQ1NjItYjNmYy0yYzk2M2Y2NmFmYTYiLCJlbWFpbCI6ImpvYW9AZXhhbXBsZS5jb20iLCJleHAiOjE3MTMxNjgwMDB9.abc123"
 }
 ```
 
-> **Guarde o token!** Use-o no header `Authorization: Bearer {token}` em todas as demais requisições.
+> **Save the token.** Use it in the `Authorization: Bearer {token}` header for all remaining requests.
 
 ---
 
-### 3. Criar uma Meta (Goal)
+### 3. Create a Goal
 
 ```bash
 curl -X POST http://localhost:5000/goals \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Aprender .NET 8",
-    "description": "Dominar C# e ASP.NET Core com DDD"
+    "title": "Learn .NET 8",
+    "description": "Master C# and ASP.NET Core with DDD"
   }'
 ```
 
-**Resposta 201 Created:**
+**201 Created response:**
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "title": "Aprender .NET 8",
-  "description": "Dominar C# e ASP.NET Core com DDD",
+  "title": "Learn .NET 8",
+  "description": "Master C# and ASP.NET Core with DDD",
   "status": "Pending",
   "createdAt": "2024-04-10T14:30:00Z"
 }
@@ -318,20 +318,20 @@ curl -X POST http://localhost:5000/goals \
 
 ---
 
-### 4. Listar Metas
+### 4. List Goals
 
 ```bash
 curl http://localhost:5000/goals \
   -H "Authorization: Bearer {token}"
 ```
 
-**Resposta 200 OK:**
+**200 OK response:**
 ```json
 [
   {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "title": "Aprender .NET 8",
-    "description": "Dominar C# e ASP.NET Core com DDD",
+    "title": "Learn .NET 8",
+    "description": "Master C# and ASP.NET Core with DDD",
     "status": "Pending",
     "createdAt": "2024-04-10T14:30:00Z"
   }
@@ -340,26 +340,26 @@ curl http://localhost:5000/goals \
 
 ---
 
-### 5. Atualizar uma Meta
+### 5. Update a Goal
 
 ```bash
 curl -X PUT http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Aprender .NET 8 e Azure",
+    "title": "Learn .NET 8 and Azure",
     "status": "InProgress"
   }'
 ```
 
-**Status disponíveis:** `Pending`, `InProgress`, `Completed`, `Cancelled`
+**Available statuses:** `Pending`, `InProgress`, `Completed`, `Cancelled`
 
-**Resposta 200 OK:**
+**200 OK response:**
 ```json
 {
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "title": "Aprender .NET 8 e Azure",
-  "description": "Dominar C# e ASP.NET Core com DDD",
+  "title": "Learn .NET 8 and Azure",
+  "description": "Master C# and ASP.NET Core with DDD",
   "status": "InProgress",
   "createdAt": "2024-04-10T14:30:00Z"
 }
@@ -367,23 +367,23 @@ curl -X PUT http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
 
 ---
 
-### 6. Adicionar Passos (Steps) à Meta
+### 6. Add Steps to a Goal
 
 ```bash
 curl -X POST http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/steps \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Completar curso de C# básico"
+    "title": "Complete a basic C# course"
   }'
 ```
 
-**Resposta 201 Created:**
+**201 Created response:**
 ```json
 {
   "id": "b2c3d4e5-f6a7-8901-bcde-f01234567891",
   "goalId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "title": "Completar curso de C# básico",
+  "title": "Complete a basic C# course",
   "isCompleted": false,
   "completedAt": null
 }
@@ -391,19 +391,19 @@ curl -X POST http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/st
 
 ---
 
-### 7. Marcar Passo como Concluído
+### 7. Mark a Step as Completed
 
 ```bash
 curl -X PUT http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/steps/b2c3d4e5-f6a7-8901-bcde-f01234567891/complete \
   -H "Authorization: Bearer {token}"
 ```
 
-**Resposta 200 OK:**
+**200 OK response:**
 ```json
 {
   "id": "b2c3d4e5-f6a7-8901-bcde-f01234567891",
   "goalId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "title": "Completar curso de C# básico",
+  "title": "Complete a basic C# course",
   "isCompleted": true,
   "completedAt": "2024-04-10T15:00:00Z"
 }
@@ -411,14 +411,14 @@ curl -X PUT http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/ste
 
 ---
 
-### 8. Ver Progresso da Meta
+### 8. Check Goal Progress
 
 ```bash
 curl http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/progress \
   -H "Authorization: Bearer {token}"
 ```
 
-**Resposta 200 OK:**
+**200 OK response:**
 ```json
 {
   "goalId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -430,73 +430,73 @@ curl http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/progress \
 
 ---
 
-### 9. Adicionar Frase Motivacional
+### 9. Add a Motivational Phrase
 
 ```bash
 curl -X POST http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/motivations \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Consistência é a chave para a maestria!"
+    "text": "Consistency is the key to mastery!"
   }'
 ```
 
-**Resposta 201 Created:**
+**201 Created response:**
 ```json
 {
   "id": "c3d4e5f6-a7b8-9012-cdef-012345678902",
   "goalId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "text": "Consistência é a chave para a maestria!"
+  "text": "Consistency is the key to mastery!"
 }
 ```
 
 ---
 
-### 10. Obter Mensagem Motivacional do Dia
+### 10. Get the Daily Motivational Message
 
 ```bash
 curl http://localhost:5000/daily-message \
   -H "Authorization: Bearer {token}"
 ```
 
-**Resposta 200 OK:**
+**200 OK response:**
 ```json
 {
-  "message": "Consistência é a chave para a maestria!",
+  "message": "Consistency is the key to mastery!",
   "date": "2024-04-10"
 }
 ```
 
-> A mensagem rotaciona diariamente entre as frases cadastradas nas metas do usuário. Se não houver frases, retorna: *"Keep going! Every step forward is progress."*
+> The message rotates daily among the phrases saved in the user's goals. If there are no phrases, it returns: *"Keep going! Every step forward is progress."*
 
 ---
 
-### 11. Deletar Frase Motivacional
+### 11. Delete a Motivational Phrase
 
 ```bash
 curl -X DELETE http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890/motivations/c3d4e5f6-a7b8-9012-cdef-012345678902 \
   -H "Authorization: Bearer {token}"
 ```
 
-**Resposta:** `204 No Content`
+**Response:** `204 No Content`
 
 ---
 
-### 12. Deletar Meta
+### 12. Delete a Goal
 
 ```bash
 curl -X DELETE http://localhost:5000/goals/a1b2c3d4-e5f6-7890-abcd-ef1234567890 \
   -H "Authorization: Bearer {token}"
 ```
 
-**Resposta:** `204 No Content`
+**Response:** `204 No Content`
 
 ---
 
-### 13. Verificar Saúde da API
+### 13. Check API Health
 
 ```bash
-# Status completo com detalhes
+# Full status with details
 curl http://localhost:5000/health
 
 # Liveness probe
@@ -506,7 +506,7 @@ curl http://localhost:5000/health/live
 curl http://localhost:5000/health/ready
 ```
 
-**Resposta (health):**
+**Health response:**
 ```json
 {
   "status": "Healthy",
@@ -526,84 +526,84 @@ curl http://localhost:5000/health/ready
 
 ---
 
-## Códigos de Erro
+## Error Codes
 
-| Código | Descrição                                              |
-|--------|--------------------------------------------------------|
-| 400    | Bad Request – dados inválidos ou ausentes              |
-| 401    | Unauthorized – token ausente, inválido ou expirado     |
-| 403    | Forbidden – recurso pertence a outro usuário           |
-| 404    | Not Found – recurso não encontrado                     |
-| 409    | Conflict – email já cadastrado ou passo já concluído   |
-| 500    | Internal Server Error – erro inesperado no servidor    |
+| Code | Description                                            |
+|------|--------------------------------------------------------|
+| 400  | Bad Request - invalid or missing data                  |
+| 401  | Unauthorized - missing, invalid, or expired token      |
+| 403  | Forbidden - resource belongs to another user           |
+| 404  | Not Found - resource not found                         |
+| 409  | Conflict - email already registered or step completed  |
+| 500  | Internal Server Error - unexpected server error        |
 
-**Formato padrão de erro:**
+**Standard error format:**
 ```json
 {
-  "error": "Descrição do problema"
+  "error": "Problem description"
 }
 ```
 
 ---
 
-## Fluxo Completo de Uso
+## Full Usage Flow
 
-```
-1. POST /users/register   →  Cria conta
-2. POST /users/login       →  Obtém JWT token
-3. POST /goals             →  Cria uma meta
-4. POST /goals/{id}/steps  →  Adiciona passos à meta (repita para vários passos)
-5. PUT  /goals/{id}/steps/{stepId}/complete  →  Conclui um passo
-6. GET  /goals/{id}/progress  →  Verifica progresso (%)
-7. POST /goals/{id}/motivations  →  Adiciona frases motivacionais
-8. GET  /daily-message         →  Recebe mensagem motivacional do dia
-9. PUT  /goals/{id}            →  Atualiza status da meta quando concluir
+```text
+1. POST /users/register                 -> Create account
+2. POST /users/login                    -> Get JWT token
+3. POST /goals                          -> Create a goal
+4. POST /goals/{id}/steps               -> Add steps to the goal (repeat as needed)
+5. PUT  /goals/{id}/steps/{stepId}/complete -> Complete a step
+6. GET  /goals/{id}/progress            -> Check progress (%)
+7. POST /goals/{id}/motivations         -> Add motivational phrases
+8. GET  /daily-message                  -> Receive the daily motivational message
+9. PUT  /goals/{id}                     -> Update the goal status when finished
 ```
 
 ---
 
-## Arquitetura
+## Architecture
 
+```text
++-----------------------------------------------------+
+|                   Motivation.Api                    |
+|   Controllers -> Middleware -> Services -> DTOs     |
++------------------------+----------------------------+
+                         |
++------------------------v----------------------------+
+|               Motivation.Application                |
+|   Services -> Interfaces -> DTOs -> Exceptions      |
++------------------------+----------------------------+
+                         |
++------------------------v----------------------------+
+|                 Motivation.Domain                   |
+|        Entities -> Interfaces (Repositories)        |
++------------------------+----------------------------+
+                         |
++------------------------v----------------------------+
+|             Motivation.Infrastructure               |
+|   EF Core -> Repositories -> JwtService -> Cache    |
++-----------------------------------------------------+
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Motivation.Api                     │
-│   Controllers → Middleware → Services → DTOs        │
-└────────────────────────┬────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────┐
-│               Motivation.Application                 │
-│   Services → Interfaces → DTOs → Exceptions         │
-└────────────────────────┬────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────┐
-│                 Motivation.Domain                    │
-│        Entities → Interfaces (Repositories)         │
-└────────────────────────┬────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────┐
-│             Motivation.Infrastructure                │
-│   EF Core → Repositories → JwtService → Cache      │
-└─────────────────────────────────────────────────────┘
-```
 
-### Princípios SOLID aplicados
+### Applied SOLID Principles
 
-- **S** – Single Responsibility: cada serviço tem uma única responsabilidade (`AuthService`, `GoalService`, `MotivationService`, etc.)
-- **O** – Open/Closed: extensível via interfaces, fechado para modificação direta
-- **L** – Liskov Substitution: implementações substituem interfaces sem quebrar o contrato
-- **I** – Interface Segregation: interfaces específicas por domínio (`IGoalService`, `IStepService`, etc.)
-- **D** – Dependency Inversion: dependência via abstrações (interfaces injetadas via DI)
+- **S** - Single Responsibility: each service has a single responsibility (`AuthService`, `GoalService`, `MotivationService`, etc.)
+- **O** - Open/Closed: extensible through interfaces and closed for direct modification
+- **L** - Liskov Substitution: implementations can replace interfaces without breaking the contract
+- **I** - Interface Segregation: specific interfaces per domain (`IGoalService`, `IStepService`, etc.)
+- **D** - Dependency Inversion: dependencies go through abstractions (interfaces injected via DI)
 
 ---
 
-## Decisões Técnicas
+## Technical Decisions
 
-| Decisão | Motivo |
-|---------|--------|
-| EF Core InMemory | Simplicidade para desenvolvimento sem banco de dados externo |
-| IMemoryCache para Goals | Reduz leituras repetidas ao banco em consultas frequentes |
-| JWT com validade de 120 min | Equilíbrio entre segurança e usabilidade |
-| Serilog com arquivo rolling diário | Rastreabilidade de logs sem crescimento ilimitado |
-| GlobalExceptionMiddleware | Centralização do tratamento de erros com responses padronizados |
-| GoalStatus como enum | Garante valores válidos no domínio sem magic strings |
-| DailyMessage com rotação por dia do ano | Variedade sem complexidade de agendamento |
+| Decision | Reason |
+|----------|--------|
+| EF Core InMemory | Simplicity for development without an external database |
+| IMemoryCache for Goals | Reduces repeated database reads on frequent queries |
+| JWT with a 120-minute expiration | Balances security and usability |
+| Serilog with daily rolling files | Log traceability without unlimited growth |
+| GlobalExceptionMiddleware | Centralized error handling with standardized responses |
+| GoalStatus as an enum | Ensures valid domain values without magic strings |
+| DailyMessage rotation by day of year | Variety without scheduling complexity |
