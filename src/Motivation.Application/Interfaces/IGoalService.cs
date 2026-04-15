@@ -12,5 +12,6 @@ namespace Motivation.Application.Interfaces
         Task<UpdateGoalResponse> UpdateAsync(Guid id, UpdateGoalRequest request, Guid userId);
         Task DeleteAsync(Guid id, Guid userId);
         Task<GoalProgressResponse> GetProgressAsync(Guid goalId, Guid userId);
+        Task<UserGoalsSummaryResponse> GetSummaryAsync(Guid userId);
     }
 }

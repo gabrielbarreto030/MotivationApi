@@ -74,6 +74,8 @@ Phase 8 - Consolidation (Days 31+)
 Day 31: Refactor AuthService and GoalService (remove unnecessary dependencies) - OK
 Day 32: Pagination in Goal and Step listings - OK
 Day 33: Advanced listing filters (Goals by status, Steps by isCompleted) - OK
+Day 34: Sorting options for Goals and Steps listings (sortBy, sortOrder) - OK
+Day 35: User goals summary endpoint (GET /goals/summary with stats by status and steps) - OK
 
 ---
 

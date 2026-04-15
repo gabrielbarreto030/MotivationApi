@@ -155,5 +155,35 @@ namespace Motivation.Application.Services
 
             return new GoalProgressResponse(goalId, total, completed, percentage);
         }
+
+        public async Task<UserGoalsSummaryResponse> GetSummaryAsync(Guid userId)
+        {
+            var goals = await _goalRepository.GetByUserAsync(userId);
+
+            int totalGoals = goals.Length;
+            int pending = goals.Count(g => g.Status == GoalStatus.Pending);
+            int inProgress = goals.Count(g => g.Status == GoalStatus.InProgress);
+            int completed = goals.Count(g => g.Status == GoalStatus.Completed);
+            int cancelled = goals.Count(g => g.Status == GoalStatus.Cancelled);
+
+            int totalSteps = 0;
+            int completedSteps = 0;
+            foreach (var goal in goals)
+            {
+                var steps = await _stepRepository.GetByGoalAsync(goal.Id);
+                totalSteps += steps.Length;
+                completedSteps += steps.Count(s => s.IsCompleted);
+            }
+
+            double overallCompletionRate = totalSteps == 0
+                ? 0
+                : Math.Round((double)completedSteps / totalSteps * 100, 2);
+
+            _logger.LogInformation(
+                "Summary for user {UserId}: {TotalGoals} goals, {TotalSteps} steps, {CompletedSteps} completed ({Rate}%)",
+                userId, totalGoals, totalSteps, completedSteps, overallCompletionRate);
+
+            return new UserGoalsSummaryResponse(totalGoals, pending, inProgress, completed, cancelled, totalSteps, completedSteps, overallCompletionRate);
+        }
     }
 }

@@ -30,6 +30,24 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Retorna um resumo estatístico das metas e passos do usuário autenticado.
+        /// </summary>
+        /// <returns>Totais de metas por status, passos totais/concluídos e taxa de conclusão geral.</returns>
+        /// <response code="200">Resumo retornado com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        [HttpGet("summary")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetSummary()
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.GetSummaryAsync(userId.Value);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Cria uma nova meta para o usuário autenticado.
         /// </summary>
         /// <param name="dto">Título, descrição e status da meta.</param>
