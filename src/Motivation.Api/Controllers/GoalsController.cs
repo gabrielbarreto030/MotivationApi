@@ -48,6 +48,24 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Retorna as metas vencidas (com deadline no passado e não concluídas/canceladas) do usuário autenticado.
+        /// </summary>
+        /// <returns>Lista de metas cujo prazo já passou e ainda estão ativas.</returns>
+        /// <response code="200">Lista de metas vencidas retornada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        [HttpGet("overdue")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetOverdue()
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.GetOverdueAsync(userId.Value);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Cria uma nova meta para o usuário autenticado.
         /// </summary>
         /// <param name="dto">Título, descrição e status da meta.</param>

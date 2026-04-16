@@ -10,10 +10,11 @@ namespace Motivation.Domain.Entities
         public string Description { get; private set; }
         public GoalStatus Status { get; private set; }
         public DateTime CreatedAt { get; private set; }
+        public DateTime? Deadline { get; private set; }
 
         protected Goal() { }
 
-        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt)
+        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty", nameof(userId));
@@ -26,6 +27,7 @@ namespace Motivation.Domain.Entities
             Description = description;
             Status = status;
             CreatedAt = createdAt;
+            Deadline = deadline;
         }
 
         public void UpdateStatus(GoalStatus newStatus)
@@ -47,7 +49,18 @@ namespace Motivation.Domain.Entities
             Description = newDescription;
         }
 
-        public void Update(string? title, string? description, GoalStatus? status)
+        public void UpdateDeadline(DateTime? deadline)
+        {
+            Deadline = deadline;
+        }
+
+        public bool IsOverdue(DateTime now) =>
+            Deadline.HasValue
+            && Deadline.Value < now
+            && Status != GoalStatus.Completed
+            && Status != GoalStatus.Cancelled;
+
+        public void Update(string? title, string? description, GoalStatus? status, DateTime? deadline = null, bool clearDeadline = false)
         {
             if (!string.IsNullOrWhiteSpace(title))
                 UpdateTitle(title);
@@ -55,6 +68,10 @@ namespace Motivation.Domain.Entities
                 UpdateDescription(description);
             if (status.HasValue)
                 UpdateStatus(status.Value);
+            if (clearDeadline)
+                UpdateDeadline(null);
+            else if (deadline.HasValue)
+                UpdateDeadline(deadline.Value);
         }
     }
 }

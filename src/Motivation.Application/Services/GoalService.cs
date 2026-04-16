@@ -26,6 +26,12 @@ namespace Motivation.Application.Services
             _logger = logger;
         }
 
+        private static CreateGoalResponse ToCreateResponse(Goal g, DateTime now) =>
+            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt, g.Deadline, g.IsOverdue(now));
+
+        private static UpdateGoalResponse ToUpdateResponse(Goal g, DateTime now) =>
+            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt, g.Deadline, g.IsOverdue(now));
+
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
         {
             if (string.IsNullOrWhiteSpace(request.Title))
@@ -33,29 +39,32 @@ namespace Motivation.Application.Services
             if (string.IsNullOrWhiteSpace(request.Description))
                 throw new ArgumentException("Description is required", nameof(request.Description));
 
-            var goal = new Goal(Guid.NewGuid(), userId, request.Title, request.Description, GoalStatus.Pending, DateTime.UtcNow);
+            var now = DateTime.UtcNow;
+            var goal = new Goal(Guid.NewGuid(), userId, request.Title, request.Description, GoalStatus.Pending, now, request.Deadline);
             await _goalRepository.AddAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} created for user {UserId} with title '{Title}'", goal.Id, userId, goal.Title);
 
-            return new CreateGoalResponse(goal.Id, goal.Title, goal.Description, goal.Status, goal.CreatedAt);
+            return ToCreateResponse(goal, now);
         }
 
         public async Task<CreateGoalResponse[]> ListByUserAsync(Guid userId)
         {
+            var now = DateTime.UtcNow;
             var goals = await _goalRepository.GetByUserAsync(userId);
             _logger.LogInformation("Listed {Count} goals for user {UserId}", goals.Length, userId);
-            return goals.Select(g => new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt)).ToArray();
+            return goals.Select(g => ToCreateResponse(g, now)).ToArray();
         }
 
         public async Task<PagedResponse<CreateGoalResponse>> ListByUserPagedAsync(Guid userId, PagedRequest request)
         {
+            var now = DateTime.UtcNow;
             var goals = await _goalRepository.GetByUserAsync(userId);
             var totalCount = goals.Length;
             var items = goals
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(g => new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt))
+                .Select(g => ToCreateResponse(g, now))
                 .ToArray();
 
             _logger.LogInformation(
@@ -67,6 +76,7 @@ namespace Motivation.Application.Services
 
         public async Task<PagedResponse<CreateGoalResponse>> ListByUserFilteredAsync(Guid userId, GoalFilterRequest request)
         {
+            var now = DateTime.UtcNow;
             var goals = await _goalRepository.GetByUserAsync(userId);
 
             IEnumerable<Goal> filtered = request.Status.HasValue
@@ -91,7 +101,7 @@ namespace Motivation.Application.Services
             var items = sortedList
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(g => new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt))
+                .Select(g => ToCreateResponse(g, now))
                 .ToArray();
 
             _logger.LogInformation(
@@ -115,12 +125,13 @@ namespace Motivation.Application.Services
             if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<GoalStatus>(request.Status, true, out var parsedStatus))
                 status = parsedStatus;
 
-            goal.Update(request.Title, request.Description, status);
+            goal.Update(request.Title, request.Description, status, request.Deadline, request.ClearDeadline);
             await _goalRepository.UpdateAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} updated by user {UserId}", id, userId);
 
-            return new UpdateGoalResponse(goal.Id, goal.Title, goal.Description, goal.Status, goal.CreatedAt);
+            var now = DateTime.UtcNow;
+            return ToUpdateResponse(goal, now);
         }
 
         public async Task DeleteAsync(Guid id, Guid userId)
@@ -154,6 +165,17 @@ namespace Motivation.Application.Services
             _logger.LogInformation("Progress for goal {GoalId}: {Completed}/{Total} steps ({Percentage}%)", goalId, completed, total, percentage);
 
             return new GoalProgressResponse(goalId, total, completed, percentage);
+        }
+
+        public async Task<CreateGoalResponse[]> GetOverdueAsync(Guid userId)
+        {
+            var now = DateTime.UtcNow;
+            var goals = await _goalRepository.GetByUserAsync(userId);
+            var overdue = goals.Where(g => g.IsOverdue(now)).ToArray();
+
+            _logger.LogInformation("Found {Count} overdue goals for user {UserId}", overdue.Length, userId);
+
+            return overdue.Select(g => ToCreateResponse(g, now)).ToArray();
         }
 
         public async Task<UserGoalsSummaryResponse> GetSummaryAsync(Guid userId)
