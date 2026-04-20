@@ -9,12 +9,13 @@ namespace Motivation.Domain.Entities
         public string Title { get; private set; }
         public string Description { get; private set; }
         public GoalStatus Status { get; private set; }
+        public GoalPriority Priority { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public DateTime? Deadline { get; private set; }
 
         protected Goal() { }
 
-        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null)
+        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null, GoalPriority priority = GoalPriority.None)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty", nameof(userId));
@@ -26,6 +27,7 @@ namespace Motivation.Domain.Entities
             Title = title;
             Description = description;
             Status = status;
+            Priority = priority;
             CreatedAt = createdAt;
             Deadline = deadline;
         }
@@ -54,13 +56,18 @@ namespace Motivation.Domain.Entities
             Deadline = deadline;
         }
 
+        public void UpdatePriority(GoalPriority priority)
+        {
+            Priority = priority;
+        }
+
         public bool IsOverdue(DateTime now) =>
             Deadline.HasValue
             && Deadline.Value < now
             && Status != GoalStatus.Completed
             && Status != GoalStatus.Cancelled;
 
-        public void Update(string? title, string? description, GoalStatus? status, DateTime? deadline = null, bool clearDeadline = false)
+        public void Update(string? title, string? description, GoalStatus? status, DateTime? deadline = null, bool clearDeadline = false, GoalPriority? priority = null)
         {
             if (!string.IsNullOrWhiteSpace(title))
                 UpdateTitle(title);
@@ -72,6 +79,8 @@ namespace Motivation.Domain.Entities
                 UpdateDeadline(null);
             else if (deadline.HasValue)
                 UpdateDeadline(deadline.Value);
+            if (priority.HasValue)
+                UpdatePriority(priority.Value);
         }
     }
 }

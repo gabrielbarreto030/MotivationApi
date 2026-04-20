@@ -76,6 +76,8 @@ Day 32: Pagination in Goal and Step listings - OK
 Day 33: Advanced listing filters (Goals by status, Steps by isCompleted) - OK
 Day 34: Sorting options for Goals and Steps listings (sortBy, sortOrder) - OK
 Day 35: User goals summary endpoint (GET /goals/summary with stats by status and steps) - OK
+Day 36: Goal deadline tracking (Deadline field on Goal + GET /goals/overdue endpoint) - OK
+Day 37: Goal priority levels (GoalPriority enum: None/Low/Medium/High + filter and sort by priority) - OK
 
 ---
 

@@ -27,10 +27,10 @@ namespace Motivation.Application.Services
         }
 
         private static CreateGoalResponse ToCreateResponse(Goal g, DateTime now) =>
-            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt, g.Deadline, g.IsOverdue(now));
+            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now));
 
         private static UpdateGoalResponse ToUpdateResponse(Goal g, DateTime now) =>
-            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.CreatedAt, g.Deadline, g.IsOverdue(now));
+            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now));
 
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
         {
@@ -40,7 +40,7 @@ namespace Motivation.Application.Services
                 throw new ArgumentException("Description is required", nameof(request.Description));
 
             var now = DateTime.UtcNow;
-            var goal = new Goal(Guid.NewGuid(), userId, request.Title, request.Description, GoalStatus.Pending, now, request.Deadline);
+            var goal = new Goal(Guid.NewGuid(), userId, request.Title, request.Description, GoalStatus.Pending, now, request.Deadline, request.Priority);
             await _goalRepository.AddAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} created for user {UserId} with title '{Title}'", goal.Id, userId, goal.Title);
@@ -79,9 +79,11 @@ namespace Motivation.Application.Services
             var now = DateTime.UtcNow;
             var goals = await _goalRepository.GetByUserAsync(userId);
 
-            IEnumerable<Goal> filtered = request.Status.HasValue
-                ? goals.Where(g => g.Status == request.Status.Value)
-                : goals;
+            IEnumerable<Goal> filtered = goals;
+            if (request.Status.HasValue)
+                filtered = filtered.Where(g => g.Status == request.Status.Value);
+            if (request.Priority.HasValue)
+                filtered = filtered.Where(g => g.Priority == request.Priority.Value);
 
             IEnumerable<Goal> sorted = request.SortBy switch
             {
@@ -91,6 +93,9 @@ namespace Motivation.Application.Services
                 "status" => request.SortOrder == "desc"
                     ? filtered.OrderByDescending(g => (int)g.Status)
                     : filtered.OrderBy(g => (int)g.Status),
+                "priority" => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(g => (int)g.Priority)
+                    : filtered.OrderBy(g => (int)g.Priority),
                 _ => request.SortOrder == "desc"
                     ? filtered.OrderByDescending(g => g.CreatedAt)
                     : filtered.OrderBy(g => g.CreatedAt)
@@ -105,9 +110,9 @@ namespace Motivation.Application.Services
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}, sortBy: {SortBy}, sortOrder: {SortOrder}) for user {UserId}",
+                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}, priority: {Priority}, sortBy: {SortBy}, sortOrder: {SortOrder}) for user {UserId}",
                 items.Length, totalCount, request.Page, request.PageSize,
-                request.Status?.ToString() ?? "all", request.SortBy, request.SortOrder, userId);
+                request.Status?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.SortBy, request.SortOrder, userId);
 
             return new PagedResponse<CreateGoalResponse>(items, totalCount, request.Page, request.PageSize);
         }
@@ -125,7 +130,7 @@ namespace Motivation.Application.Services
             if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<GoalStatus>(request.Status, true, out var parsedStatus))
                 status = parsedStatus;
 
-            goal.Update(request.Title, request.Description, status, request.Deadline, request.ClearDeadline);
+            goal.Update(request.Title, request.Description, status, request.Deadline, request.ClearDeadline, request.Priority);
             await _goalRepository.UpdateAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} updated by user {UserId}", id, userId);

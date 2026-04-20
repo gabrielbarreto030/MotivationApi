@@ -92,7 +92,8 @@ namespace Motivation.Api.Controllers
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10, máximo: 50).</param>
         /// <param name="status">Filtrar por status: Pending, InProgress, Completed, Cancelled (opcional).</param>
-        /// <param name="sortBy">Campo de ordenação: title, status, createdAt (padrão: createdAt).</param>
+        /// <param name="priority">Filtrar por prioridade: None, Low, Medium, High (opcional).</param>
+        /// <param name="sortBy">Campo de ordenação: title, status, priority, createdAt (padrão: createdAt).</param>
         /// <param name="sortOrder">Direção: asc (padrão) ou desc.</param>
         /// <returns>Resposta paginada com metas do usuário.</returns>
         /// <response code="200">Lista paginada retornada com sucesso.</response>
@@ -104,6 +105,7 @@ namespace Motivation.Api.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string? status = null,
+            [FromQuery] string? priority = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] string? sortOrder = null)
         {
@@ -112,10 +114,15 @@ namespace Motivation.Api.Controllers
 
             Motivation.Domain.Entities.GoalStatus? statusFilter = null;
             if (!string.IsNullOrWhiteSpace(status) &&
-                Enum.TryParse<Motivation.Domain.Entities.GoalStatus>(status, ignoreCase: true, out var parsed))
-                statusFilter = parsed;
+                Enum.TryParse<Motivation.Domain.Entities.GoalStatus>(status, ignoreCase: true, out var parsedStatus))
+                statusFilter = parsedStatus;
 
-            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder);
+            Motivation.Domain.Entities.GoalPriority? priorityFilter = null;
+            if (!string.IsNullOrWhiteSpace(priority) &&
+                Enum.TryParse<Motivation.Domain.Entities.GoalPriority>(priority, ignoreCase: true, out var parsedPriority))
+                priorityFilter = parsedPriority;
+
+            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder, priorityFilter);
             var result = await _goalService.ListByUserFilteredAsync(userId.Value, filterRequest);
             return Ok(result);
         }
