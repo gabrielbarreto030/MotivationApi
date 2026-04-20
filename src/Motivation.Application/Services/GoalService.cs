@@ -27,10 +27,10 @@ namespace Motivation.Application.Services
         }
 
         private static CreateGoalResponse ToCreateResponse(Goal g, DateTime now) =>
-            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now));
+            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes);
 
         private static UpdateGoalResponse ToUpdateResponse(Goal g, DateTime now) =>
-            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now));
+            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes);
 
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
         {
@@ -40,7 +40,7 @@ namespace Motivation.Application.Services
                 throw new ArgumentException("Description is required", nameof(request.Description));
 
             var now = DateTime.UtcNow;
-            var goal = new Goal(Guid.NewGuid(), userId, request.Title, request.Description, GoalStatus.Pending, now, request.Deadline, request.Priority);
+            var goal = new Goal(Guid.NewGuid(), userId, request.Title, request.Description, GoalStatus.Pending, now, request.Deadline, request.Priority, request.Notes);
             await _goalRepository.AddAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} created for user {UserId} with title '{Title}'", goal.Id, userId, goal.Title);
@@ -130,7 +130,7 @@ namespace Motivation.Application.Services
             if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<GoalStatus>(request.Status, true, out var parsedStatus))
                 status = parsedStatus;
 
-            goal.Update(request.Title, request.Description, status, request.Deadline, request.ClearDeadline, request.Priority);
+            goal.Update(request.Title, request.Description, status, request.Deadline, request.ClearDeadline, request.Priority, request.Notes, request.ClearNotes);
             await _goalRepository.UpdateAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} updated by user {UserId}", id, userId);
