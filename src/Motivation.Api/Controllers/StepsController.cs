@@ -119,6 +119,45 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Atualiza as notas de um passo. Use ClearNotes=true para remover as notas existentes.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="stepId">Id do passo.</param>
+        /// <param name="dto">Dados de atualização: Notes e/ou ClearNotes.</param>
+        /// <returns>Passo atualizado com o campo Notes refletindo a mudança.</returns>
+        /// <response code="200">Passo atualizado com sucesso.</response>
+        /// <response code="400">StepId inválido ou passo não pertence à meta.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        [HttpPut("{stepId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateNotes(Guid goalId, Guid stepId, [FromBody] UpdateStepRequest dto)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _stepService.UpdateNotesAsync(goalId, stepId, dto, userId.Value);
+                _logger.LogInformation("Step {StepId} notes updated for goal {GoalId} by user {UserId}", stepId, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request updating notes for step {StepId}: {Message}", stepId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _logger.LogWarning("Unauthorized step update attempt on goal {GoalId} by user {UserId}", goalId, userId.Value);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
         /// Marca um passo como concluído, registrando a data/hora de conclusão.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>

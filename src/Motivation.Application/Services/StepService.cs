@@ -35,12 +35,12 @@ namespace Motivation.Application.Services
             if (goal.UserId != userId)
                 throw new UnauthorizedAccessException("You don't have permission to add steps to this goal");
 
-            var step = new Step(Guid.NewGuid(), goalId, request.Title);
+            var step = new Step(Guid.NewGuid(), goalId, request.Title, request.Notes);
             await _stepRepository.AddAsync(step);
 
             _logger.LogInformation("Step {StepId} created for goal {GoalId} by user {UserId}", step.Id, goalId, userId);
 
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt);
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
         }
 
         public async Task<CreateStepResponse[]> ListByGoalAsync(Guid goalId, Guid userId)
@@ -54,7 +54,7 @@ namespace Motivation.Application.Services
 
             var steps = await _stepRepository.GetByGoalAsync(goalId);
             _logger.LogInformation("Listed {Count} steps for goal {GoalId} by user {UserId}", steps.Length, goalId, userId);
-            return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt)).ToArray();
+            return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes)).ToArray();
         }
 
         public async Task<PagedResponse<CreateStepResponse>> ListByGoalPagedAsync(Guid goalId, Guid userId, PagedRequest request)
@@ -71,7 +71,7 @@ namespace Motivation.Application.Services
             var items = steps
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt))
+                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes))
                 .ToArray();
 
             _logger.LogInformation(
@@ -114,7 +114,7 @@ namespace Motivation.Application.Services
             var items = sortedList
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt))
+                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes))
                 .ToArray();
 
             _logger.LogInformation(
@@ -149,7 +149,35 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Step {StepId} marked as completed for goal {GoalId} by user {UserId}", stepId, goalId, userId);
 
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt);
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
+        }
+
+        public async Task<CreateStepResponse> UpdateNotesAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to update steps of this goal");
+
+            var step = await _stepRepository.GetByIdAsync(stepId);
+            if (step == null)
+                throw new ArgumentException("Step not found", nameof(stepId));
+
+            if (step.GoalId != goalId)
+                throw new ArgumentException("Step does not belong to the specified goal", nameof(stepId));
+
+            if (request.ClearNotes)
+                step.UpdateNotes(null);
+            else if (request.Notes != null)
+                step.UpdateNotes(request.Notes);
+
+            await _stepRepository.UpdateAsync(step);
+
+            _logger.LogInformation("Step {StepId} notes updated for goal {GoalId} by user {UserId}", stepId, goalId, userId);
+
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
         }
     }
 }
