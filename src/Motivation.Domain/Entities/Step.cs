@@ -32,6 +32,13 @@ namespace Motivation.Domain.Entities
             CompletedAt = completedAt;
         }
 
+        public void UpdateTitle(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                throw new ArgumentException("Title is required", nameof(title));
+            Title = title;
+        }
+
         public void UpdateNotes(string? notes)
         {
             Notes = notes;

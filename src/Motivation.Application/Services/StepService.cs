@@ -152,7 +152,7 @@ namespace Motivation.Application.Services
             return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
         }
 
-        public async Task<CreateStepResponse> UpdateNotesAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId)
+        public async Task<CreateStepResponse> UpdateAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId)
         {
             var goal = await _goalRepository.GetByIdAsync(goalId);
             if (goal == null)
@@ -168,6 +168,9 @@ namespace Motivation.Application.Services
             if (step.GoalId != goalId)
                 throw new ArgumentException("Step does not belong to the specified goal", nameof(stepId));
 
+            if (!string.IsNullOrWhiteSpace(request.Title))
+                step.UpdateTitle(request.Title);
+
             if (request.ClearNotes)
                 step.UpdateNotes(null);
             else if (request.Notes != null)
@@ -175,7 +178,7 @@ namespace Motivation.Application.Services
 
             await _stepRepository.UpdateAsync(step);
 
-            _logger.LogInformation("Step {StepId} notes updated for goal {GoalId} by user {UserId}", stepId, goalId, userId);
+            _logger.LogInformation("Step {StepId} updated for goal {GoalId} by user {UserId}", stepId, goalId, userId);
 
             return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
         }

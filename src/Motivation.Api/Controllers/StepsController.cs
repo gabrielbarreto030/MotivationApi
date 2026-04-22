@@ -119,12 +119,12 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Atualiza as notas de um passo. Use ClearNotes=true para remover as notas existentes.
+        /// Atualiza o título e/ou as notas de um passo. Use ClearNotes=true para remover as notas existentes.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>
         /// <param name="stepId">Id do passo.</param>
-        /// <param name="dto">Dados de atualização: Notes e/ou ClearNotes.</param>
-        /// <returns>Passo atualizado com o campo Notes refletindo a mudança.</returns>
+        /// <param name="dto">Dados de atualização: Title, Notes e/ou ClearNotes.</param>
+        /// <returns>Passo atualizado com título e notas refletindo as mudanças.</returns>
         /// <response code="200">Passo atualizado com sucesso.</response>
         /// <response code="400">StepId inválido ou passo não pertence à meta.</response>
         /// <response code="401">Token ausente ou inválido.</response>
@@ -134,20 +134,20 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> UpdateNotes(Guid goalId, Guid stepId, [FromBody] UpdateStepRequest dto)
+        public async Task<IActionResult> Update(Guid goalId, Guid stepId, [FromBody] UpdateStepRequest dto)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var result = await _stepService.UpdateNotesAsync(goalId, stepId, dto, userId.Value);
-                _logger.LogInformation("Step {StepId} notes updated for goal {GoalId} by user {UserId}", stepId, goalId, userId.Value);
+                var result = await _stepService.UpdateAsync(goalId, stepId, dto, userId.Value);
+                _logger.LogInformation("Step {StepId} updated for goal {GoalId} by user {UserId}", stepId, goalId, userId.Value);
                 return Ok(result);
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning("Bad request updating notes for step {StepId}: {Message}", stepId, ex.Message);
+                _logger.LogWarning("Bad request updating step {StepId}: {Message}", stepId, ex.Message);
                 return BadRequest(new { message = ex.Message });
             }
             catch (UnauthorizedAccessException)

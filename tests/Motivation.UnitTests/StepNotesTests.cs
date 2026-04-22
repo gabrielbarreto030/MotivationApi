@@ -117,7 +117,7 @@ namespace Motivation.UnitTests
             var goal = await CreateGoalAsync();
             var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step"), _userId);
 
-            var updated = await _stepService.UpdateNotesAsync(goal.Id, created.Id, new UpdateStepRequest("New note"), _userId);
+            var updated = await _stepService.UpdateAsync(goal.Id, created.Id, new UpdateStepRequest(Notes: "New note"), _userId);
 
             updated.Notes.Should().Be("New note");
         }
@@ -128,7 +128,7 @@ namespace Motivation.UnitTests
             var goal = await CreateGoalAsync();
             var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step", "Original note"), _userId);
 
-            var updated = await _stepService.UpdateNotesAsync(goal.Id, created.Id, new UpdateStepRequest(null, ClearNotes: true), _userId);
+            var updated = await _stepService.UpdateAsync(goal.Id, created.Id, new UpdateStepRequest(ClearNotes: true), _userId);
 
             updated.Notes.Should().BeNull();
         }
@@ -139,7 +139,7 @@ namespace Motivation.UnitTests
             var goal = await CreateGoalAsync();
             var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step", "Keep me"), _userId);
 
-            var updated = await _stepService.UpdateNotesAsync(goal.Id, created.Id, new UpdateStepRequest(null, false), _userId);
+            var updated = await _stepService.UpdateAsync(goal.Id, created.Id, new UpdateStepRequest(), _userId);
 
             updated.Notes.Should().Be("Keep me");
         }
@@ -151,7 +151,7 @@ namespace Motivation.UnitTests
             var created = await _stepService.CreateAsync(goal.Id, new CreateStepRequest("Step"), _userId);
             var otherUser = Guid.NewGuid();
 
-            var act = async () => await _stepService.UpdateNotesAsync(goal.Id, created.Id, new UpdateStepRequest("Note"), otherUser);
+            var act = async () => await _stepService.UpdateAsync(goal.Id, created.Id, new UpdateStepRequest(Notes: "Note"), otherUser);
 
             await act.Should().ThrowAsync<UnauthorizedAccessException>();
         }
@@ -161,7 +161,7 @@ namespace Motivation.UnitTests
         {
             var goal = await CreateGoalAsync();
 
-            var act = async () => await _stepService.UpdateNotesAsync(goal.Id, Guid.NewGuid(), new UpdateStepRequest("Note"), _userId);
+            var act = async () => await _stepService.UpdateAsync(goal.Id, Guid.NewGuid(), new UpdateStepRequest(Notes: "Note"), _userId);
 
             await act.Should().ThrowAsync<ArgumentException>();
         }
