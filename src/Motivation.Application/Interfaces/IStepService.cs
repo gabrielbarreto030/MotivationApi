@@ -12,5 +12,6 @@ namespace Motivation.Application.Interfaces
         Task<PagedResponse<CreateStepResponse>> ListByGoalFilteredAsync(Guid goalId, Guid userId, StepFilterRequest request);
         Task<CreateStepResponse> MarkCompletedAsync(Guid goalId, Guid stepId, Guid userId);
         Task<CreateStepResponse> UpdateAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId);
+        Task<CreateStepResponse[]> GetOverdueByGoalAsync(Guid goalId, Guid userId);
     }
 }

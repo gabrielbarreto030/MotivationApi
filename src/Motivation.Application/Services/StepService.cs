@@ -35,12 +35,13 @@ namespace Motivation.Application.Services
             if (goal.UserId != userId)
                 throw new UnauthorizedAccessException("You don't have permission to add steps to this goal");
 
-            var step = new Step(Guid.NewGuid(), goalId, request.Title, request.Notes);
+            var step = new Step(Guid.NewGuid(), goalId, request.Title, request.Notes, request.DueDate);
             await _stepRepository.AddAsync(step);
 
             _logger.LogInformation("Step {StepId} created for goal {GoalId} by user {UserId}", step.Id, goalId, userId);
 
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
+            var now = DateTime.UtcNow;
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(now));
         }
 
         public async Task<CreateStepResponse[]> ListByGoalAsync(Guid goalId, Guid userId)
@@ -53,8 +54,9 @@ namespace Motivation.Application.Services
                 throw new UnauthorizedAccessException("You don't have permission to view steps of this goal");
 
             var steps = await _stepRepository.GetByGoalAsync(goalId);
+            var now = DateTime.UtcNow;
             _logger.LogInformation("Listed {Count} steps for goal {GoalId} by user {UserId}", steps.Length, goalId, userId);
-            return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes)).ToArray();
+            return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now))).ToArray();
         }
 
         public async Task<PagedResponse<CreateStepResponse>> ListByGoalPagedAsync(Guid goalId, Guid userId, PagedRequest request)
@@ -67,11 +69,12 @@ namespace Motivation.Application.Services
                 throw new UnauthorizedAccessException("You don't have permission to view steps of this goal");
 
             var steps = await _stepRepository.GetByGoalAsync(goalId);
+            var now = DateTime.UtcNow;
             var totalCount = steps.Length;
             var items = steps
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes))
+                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now)))
                 .ToArray();
 
             _logger.LogInformation(
@@ -109,12 +112,13 @@ namespace Motivation.Application.Services
                     : filtered.OrderBy(s => s.Title)
             };
 
+            var now = DateTime.UtcNow;
             var sortedList = sorted.ToArray();
             var totalCount = sortedList.Length;
             var items = sortedList
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes))
+                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now)))
                 .ToArray();
 
             _logger.LogInformation(
@@ -144,12 +148,13 @@ namespace Motivation.Application.Services
             if (step.IsCompleted)
                 throw new InvalidOperationException("Step is already completed");
 
-            step.MarkCompleted(DateTime.UtcNow);
+            var completedAt = DateTime.UtcNow;
+            step.MarkCompleted(completedAt);
             await _stepRepository.UpdateAsync(step);
 
             _logger.LogInformation("Step {StepId} marked as completed for goal {GoalId} by user {UserId}", stepId, goalId, userId);
 
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(completedAt));
         }
 
         public async Task<CreateStepResponse> UpdateAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId)
@@ -176,11 +181,35 @@ namespace Motivation.Application.Services
             else if (request.Notes != null)
                 step.UpdateNotes(request.Notes);
 
+            if (request.ClearDueDate)
+                step.UpdateDueDate(null);
+            else if (request.DueDate.HasValue)
+                step.UpdateDueDate(request.DueDate.Value);
+
             await _stepRepository.UpdateAsync(step);
 
             _logger.LogInformation("Step {StepId} updated for goal {GoalId} by user {UserId}", stepId, goalId, userId);
 
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes);
+            var now = DateTime.UtcNow;
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(now));
+        }
+
+        public async Task<CreateStepResponse[]> GetOverdueByGoalAsync(Guid goalId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view steps of this goal");
+
+            var now = DateTime.UtcNow;
+            var steps = await _stepRepository.GetByGoalAsync(goalId);
+            var overdue = steps.Where(s => s.IsOverdue(now)).ToArray();
+
+            _logger.LogInformation("Found {Count} overdue steps for goal {GoalId} by user {UserId}", overdue.Length, goalId, userId);
+
+            return overdue.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, true)).ToArray();
         }
     }
 }
