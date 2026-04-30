@@ -35,13 +35,13 @@ namespace Motivation.Application.Services
             if (goal.UserId != userId)
                 throw new UnauthorizedAccessException("You don't have permission to add steps to this goal");
 
-            var step = new Step(Guid.NewGuid(), goalId, request.Title, request.Notes, request.DueDate);
+            var step = new Step(Guid.NewGuid(), goalId, request.Title, request.Notes, request.DueDate, request.Priority);
             await _stepRepository.AddAsync(step);
 
             _logger.LogInformation("Step {StepId} created for goal {GoalId} by user {UserId}", step.Id, goalId, userId);
 
             var now = DateTime.UtcNow;
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(now));
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(now), step.Priority);
         }
 
         public async Task<CreateStepResponse[]> ListByGoalAsync(Guid goalId, Guid userId)
@@ -56,7 +56,7 @@ namespace Motivation.Application.Services
             var steps = await _stepRepository.GetByGoalAsync(goalId);
             var now = DateTime.UtcNow;
             _logger.LogInformation("Listed {Count} steps for goal {GoalId} by user {UserId}", steps.Length, goalId, userId);
-            return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now))).ToArray();
+            return steps.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now), s.Priority)).ToArray();
         }
 
         public async Task<PagedResponse<CreateStepResponse>> ListByGoalPagedAsync(Guid goalId, Guid userId, PagedRequest request)
@@ -74,7 +74,7 @@ namespace Motivation.Application.Services
             var items = steps
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now)))
+                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now), s.Priority))
                 .ToArray();
 
             _logger.LogInformation(
@@ -99,6 +99,9 @@ namespace Motivation.Application.Services
                 ? steps.Where(s => s.IsCompleted == request.IsCompleted.Value)
                 : steps;
 
+            if (request.Priority.HasValue)
+                filtered = filtered.Where(s => s.Priority == request.Priority.Value);
+
             IEnumerable<Step> sorted = request.SortBy switch
             {
                 "iscompleted" => request.SortOrder == "desc"
@@ -107,6 +110,9 @@ namespace Motivation.Application.Services
                 "completedat" => request.SortOrder == "desc"
                     ? filtered.OrderByDescending(s => s.CompletedAt)
                     : filtered.OrderBy(s => s.CompletedAt),
+                "priority" => request.SortOrder == "desc"
+                    ? filtered.OrderByDescending(s => (int)s.Priority)
+                    : filtered.OrderBy(s => (int)s.Priority),
                 _ => request.SortOrder == "desc"
                     ? filtered.OrderByDescending(s => s.Title)
                     : filtered.OrderBy(s => s.Title)
@@ -118,13 +124,13 @@ namespace Motivation.Application.Services
             var items = sortedList
                 .Skip((request.Page - 1) * request.PageSize)
                 .Take(request.PageSize)
-                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now)))
+                .Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, s.IsOverdue(now), s.Priority))
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} steps (page {Page}, pageSize {PageSize}, isCompleted: {IsCompleted}, sortBy: {SortBy}, sortOrder: {SortOrder}) for goal {GoalId} by user {UserId}",
+                "Listed {Count}/{Total} steps (page {Page}, pageSize {PageSize}, isCompleted: {IsCompleted}, priority: {Priority}, sortBy: {SortBy}, sortOrder: {SortOrder}) for goal {GoalId} by user {UserId}",
                 items.Length, totalCount, request.Page, request.PageSize,
-                request.IsCompleted?.ToString() ?? "all", request.SortBy, request.SortOrder, goalId, userId);
+                request.IsCompleted?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.SortBy, request.SortOrder, goalId, userId);
 
             return new PagedResponse<CreateStepResponse>(items, totalCount, request.Page, request.PageSize);
         }
@@ -154,7 +160,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Step {StepId} marked as completed for goal {GoalId} by user {UserId}", stepId, goalId, userId);
 
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(completedAt));
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(completedAt), step.Priority);
         }
 
         public async Task<CreateStepResponse> UpdateAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId)
@@ -186,12 +192,15 @@ namespace Motivation.Application.Services
             else if (request.DueDate.HasValue)
                 step.UpdateDueDate(request.DueDate.Value);
 
+            if (request.Priority.HasValue)
+                step.UpdatePriority(request.Priority.Value);
+
             await _stepRepository.UpdateAsync(step);
 
             _logger.LogInformation("Step {StepId} updated for goal {GoalId} by user {UserId}", stepId, goalId, userId);
 
             var now = DateTime.UtcNow;
-            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(now));
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(now), step.Priority);
         }
 
         public async Task<CreateStepResponse[]> GetOverdueByGoalAsync(Guid goalId, Guid userId)
@@ -209,7 +218,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Found {Count} overdue steps for goal {GoalId} by user {UserId}", overdue.Length, goalId, userId);
 
-            return overdue.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, true)).ToArray();
+            return overdue.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, true, s.Priority)).ToArray();
         }
     }
 }

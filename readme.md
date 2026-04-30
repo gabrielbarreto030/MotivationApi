@@ -81,6 +81,8 @@ Day 37: Goal priority levels (GoalPriority enum: None/Low/Medium/High + filter a
 Day 38: Goal notes field (optional Notes on Goal entity: set on create/update, clear with ClearNotes flag, included in all responses) - OK
 Day 39: Step notes field (optional Notes on Step entity: set on create, update/clear via PUT /goals/{goalId}/steps/{stepId}, included in all responses) - OK
 Day 40: Step title update (allow updating Step title via PUT /goals/{goalId}/steps/{stepId}: Title field added to UpdateStepRequest, UpdateAsync replaces UpdateNotesAsync handling both title and notes atomically) - OK
+Day 41: Step due date (optional DueDate on Step entity: set on create/update, clear with ClearDueDate flag, IsOverdue computed field in all responses, GET /goals/{goalId}/steps/overdue endpoint) - OK
+Day 42: Step priority levels (StepPriority enum: None/Low/Medium/High + filter and sort by priority on steps listing) - OK
 
 ---
 

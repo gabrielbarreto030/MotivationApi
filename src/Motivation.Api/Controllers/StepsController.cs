@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Interfaces;
+using Motivation.Domain.Entities;
 
 namespace Motivation.Api.Controllers
 {
@@ -35,7 +36,8 @@ namespace Motivation.Api.Controllers
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10, máximo: 50).</param>
         /// <param name="isCompleted">Filtrar por conclusão: true = concluídos, false = pendentes (opcional).</param>
-        /// <param name="sortBy">Campo de ordenação: title (padrão), isCompleted, completedAt.</param>
+        /// <param name="priority">Filtrar por prioridade: None, Low, Medium, High (opcional).</param>
+        /// <param name="sortBy">Campo de ordenação: title (padrão), isCompleted, completedAt, priority.</param>
         /// <param name="sortOrder">Direção: asc (padrão) ou desc.</param>
         /// <returns>Resposta paginada com passos da meta.</returns>
         /// <response code="200">Lista paginada de passos retornada com sucesso.</response>
@@ -52,6 +54,7 @@ namespace Motivation.Api.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] bool? isCompleted = null,
+            [FromQuery] StepPriority? priority = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] string? sortOrder = null)
         {
@@ -60,12 +63,12 @@ namespace Motivation.Api.Controllers
 
             try
             {
-                var filterRequest = new StepFilterRequest(page, pageSize, isCompleted, sortBy, sortOrder);
+                var filterRequest = new StepFilterRequest(page, pageSize, isCompleted, sortBy, sortOrder, priority);
                 var result = await _stepService.ListByGoalFilteredAsync(goalId, userId.Value, filterRequest);
                 _logger.LogInformation(
-                    "Listed {Count}/{Total} steps for goal {GoalId} by user {UserId} (isCompleted: {IsCompleted}, sortBy: {SortBy}, sortOrder: {SortOrder})",
+                    "Listed {Count}/{Total} steps for goal {GoalId} by user {UserId} (isCompleted: {IsCompleted}, priority: {Priority}, sortBy: {SortBy}, sortOrder: {SortOrder})",
                     result.Items.Count, result.TotalCount, goalId, userId.Value,
-                    isCompleted?.ToString() ?? "all", sortBy ?? "title", sortOrder ?? "asc");
+                    isCompleted?.ToString() ?? "all", priority?.ToString() ?? "all", sortBy ?? "title", sortOrder ?? "asc");
                 return Ok(result);
             }
             catch (ArgumentException ex)
