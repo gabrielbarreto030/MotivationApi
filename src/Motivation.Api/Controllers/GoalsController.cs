@@ -48,6 +48,24 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Retorna as metas arquivadas do usuário autenticado.
+        /// </summary>
+        /// <returns>Lista de metas arquivadas.</returns>
+        /// <response code="200">Lista de metas arquivadas retornada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        [HttpGet("archived")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetArchived()
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.GetArchivedAsync(userId.Value);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Retorna as metas vencidas (com deadline no passado e não concluídas/canceladas) do usuário autenticado.
         /// </summary>
         /// <returns>Lista de metas cujo prazo já passou e ainda estão ativas.</returns>
@@ -95,6 +113,7 @@ namespace Motivation.Api.Controllers
         /// <param name="priority">Filtrar por prioridade: None, Low, Medium, High (opcional).</param>
         /// <param name="sortBy">Campo de ordenação: title, status, priority, createdAt (padrão: createdAt).</param>
         /// <param name="sortOrder">Direção: asc (padrão) ou desc.</param>
+        /// <param name="includeArchived">Incluir metas arquivadas (padrão: false).</param>
         /// <returns>Resposta paginada com metas do usuário.</returns>
         /// <response code="200">Lista paginada retornada com sucesso.</response>
         /// <response code="401">Token ausente ou inválido.</response>
@@ -107,7 +126,8 @@ namespace Motivation.Api.Controllers
             [FromQuery] string? status = null,
             [FromQuery] string? priority = null,
             [FromQuery] string? sortBy = null,
-            [FromQuery] string? sortOrder = null)
+            [FromQuery] string? sortOrder = null,
+            [FromQuery] bool includeArchived = false)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
@@ -122,7 +142,7 @@ namespace Motivation.Api.Controllers
                 Enum.TryParse<Motivation.Domain.Entities.GoalPriority>(priority, ignoreCase: true, out var parsedPriority))
                 priorityFilter = parsedPriority;
 
-            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder, priorityFilter);
+            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder, priorityFilter, includeArchived);
             var result = await _goalService.ListByUserFilteredAsync(userId.Value, filterRequest);
             return Ok(result);
         }
@@ -170,6 +190,50 @@ namespace Motivation.Api.Controllers
             if (userId == null) return Unauthorized();
 
             var result = await _goalService.GetProgressAsync(id, userId.Value);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Arquiva uma meta do usuário autenticado (remove da listagem padrão sem excluir).
+        /// </summary>
+        /// <param name="id">Id da meta a arquivar.</param>
+        /// <returns>Meta arquivada.</returns>
+        /// <response code="200">Meta arquivada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="404">Meta não encontrada ou não pertence ao usuário.</response>
+        [HttpPost("{id}/archive")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Archive(Guid id)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.ArchiveAsync(id, userId.Value);
+            _logger.LogInformation("Goal {GoalId} archived by user {UserId}", id, userId.Value);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Desarquiva uma meta do usuário autenticado (restaura para a listagem padrão).
+        /// </summary>
+        /// <param name="id">Id da meta a desarquivar.</param>
+        /// <returns>Meta desarquivada.</returns>
+        /// <response code="200">Meta desarquivada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="404">Meta não encontrada ou não pertence ao usuário.</response>
+        [HttpDelete("{id}/archive")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Unarchive(Guid id)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.UnarchiveAsync(id, userId.Value);
+            _logger.LogInformation("Goal {GoalId} unarchived by user {UserId}", id, userId.Value);
             return Ok(result);
         }
 

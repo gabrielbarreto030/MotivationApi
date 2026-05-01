@@ -27,10 +27,10 @@ namespace Motivation.Application.Services
         }
 
         private static CreateGoalResponse ToCreateResponse(Goal g, DateTime now) =>
-            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes);
+            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived);
 
         private static UpdateGoalResponse ToUpdateResponse(Goal g, DateTime now) =>
-            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes);
+            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived);
 
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
         {
@@ -80,6 +80,8 @@ namespace Motivation.Application.Services
             var goals = await _goalRepository.GetByUserAsync(userId);
 
             IEnumerable<Goal> filtered = goals;
+            if (!request.IncludeArchived)
+                filtered = filtered.Where(g => !g.IsArchived);
             if (request.Status.HasValue)
                 filtered = filtered.Where(g => g.Status == request.Status.Value);
             if (request.Priority.HasValue)
@@ -211,6 +213,51 @@ namespace Motivation.Application.Services
                 userId, totalGoals, totalSteps, completedSteps, overallCompletionRate);
 
             return new UserGoalsSummaryResponse(totalGoals, pending, inProgress, completed, cancelled, totalSteps, completedSteps, overallCompletionRate);
+        }
+
+        public async Task<CreateGoalResponse> ArchiveAsync(Guid id, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(id);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(id));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to archive this goal");
+
+            goal.Archive();
+            await _goalRepository.UpdateAsync(goal);
+
+            _logger.LogInformation("Goal {GoalId} archived by user {UserId}", id, userId);
+
+            return ToCreateResponse(goal, DateTime.UtcNow);
+        }
+
+        public async Task<CreateGoalResponse> UnarchiveAsync(Guid id, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(id);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(id));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to unarchive this goal");
+
+            goal.Unarchive();
+            await _goalRepository.UpdateAsync(goal);
+
+            _logger.LogInformation("Goal {GoalId} unarchived by user {UserId}", id, userId);
+
+            return ToCreateResponse(goal, DateTime.UtcNow);
+        }
+
+        public async Task<CreateGoalResponse[]> GetArchivedAsync(Guid userId)
+        {
+            var now = DateTime.UtcNow;
+            var goals = await _goalRepository.GetByUserAsync(userId);
+            var archived = goals.Where(g => g.IsArchived).ToArray();
+
+            _logger.LogInformation("Found {Count} archived goals for user {UserId}", archived.Length, userId);
+
+            return archived.Select(g => ToCreateResponse(g, now)).ToArray();
         }
     }
 }

@@ -13,6 +13,7 @@ namespace Motivation.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public DateTime? Deadline { get; private set; }
         public string? Notes { get; private set; }
+        public bool IsArchived { get; private set; }
 
         protected Goal() { }
 
@@ -67,6 +68,10 @@ namespace Motivation.Domain.Entities
         {
             Notes = notes;
         }
+
+        public void Archive() => IsArchived = true;
+
+        public void Unarchive() => IsArchived = false;
 
         public bool IsOverdue(DateTime now) =>
             Deadline.HasValue

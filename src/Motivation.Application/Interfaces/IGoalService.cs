@@ -14,5 +14,8 @@ namespace Motivation.Application.Interfaces
         Task<GoalProgressResponse> GetProgressAsync(Guid goalId, Guid userId);
         Task<UserGoalsSummaryResponse> GetSummaryAsync(Guid userId);
         Task<CreateGoalResponse[]> GetOverdueAsync(Guid userId);
+        Task<CreateGoalResponse> ArchiveAsync(Guid id, Guid userId);
+        Task<CreateGoalResponse> UnarchiveAsync(Guid id, Guid userId);
+        Task<CreateGoalResponse[]> GetArchivedAsync(Guid userId);
     }
 }
