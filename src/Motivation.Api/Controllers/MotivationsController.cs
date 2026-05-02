@@ -29,6 +29,43 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Lista todas as frases motivacionais de uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <returns>Array de motivações com id, goalId e texto.</returns>
+        /// <response code="200">Lista retornada com sucesso.</response>
+        /// <response code="400">Meta não encontrada.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> List(Guid goalId)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _motivationService.ListByGoalAsync(goalId, userId.Value);
+                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId}", result.Length, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request listing motivations for goal {GoalId}: {Message}", goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized motivation list attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
         /// Adiciona uma frase motivacional a uma meta do usuário autenticado.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>

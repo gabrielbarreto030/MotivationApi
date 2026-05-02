@@ -83,6 +83,8 @@ Day 39: Step notes field (optional Notes on Step entity: set on create, update/c
 Day 40: Step title update (allow updating Step title via PUT /goals/{goalId}/steps/{stepId}: Title field added to UpdateStepRequest, UpdateAsync replaces UpdateNotesAsync handling both title and notes atomically) - OK
 Day 41: Step due date (optional DueDate on Step entity: set on create/update, clear with ClearDueDate flag, IsOverdue computed field in all responses, GET /goals/{goalId}/steps/overdue endpoint) - OK
 Day 42: Step priority levels (StepPriority enum: None/Low/Medium/High + filter and sort by priority on steps listing) - OK
+Day 43: Goal archiving (IsArchived flag on Goal entity: POST /goals/{id}/archive, DELETE /goals/{id}/archive, GET /goals/archived; default listing excludes archived; includeArchived=true query param to include them) - OK
+Day 44: List Motivations (GET /goals/{goalId}/motivations endpoint: ListByGoalAsync added to IMotivationService and MotivationService, returns all motivational phrases for a goal with ownership validation) - OK
 
 ---
 

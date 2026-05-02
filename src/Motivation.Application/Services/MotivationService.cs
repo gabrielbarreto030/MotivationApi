@@ -60,5 +60,21 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Motivation {MotivationId} removed from goal {GoalId} by user {UserId}", motivationId, goalId, userId);
         }
+
+        public async Task<AddMotivationResponse[]> ListByGoalAsync(Guid goalId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view motivations of this goal");
+
+            var motivations = await _motivationRepository.GetByGoalAsync(goalId);
+
+            _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId}", motivations.Length, goalId, userId);
+
+            return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text));
+        }
     }
 }

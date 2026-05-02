@@ -8,5 +8,6 @@ namespace Motivation.Application.Interfaces
     {
         Task<AddMotivationResponse> AddAsync(Guid goalId, AddMotivationRequest request, Guid userId);
         Task RemoveAsync(Guid goalId, Guid motivationId, Guid userId);
+        Task<AddMotivationResponse[]> ListByGoalAsync(Guid goalId, Guid userId);
     }
 }
