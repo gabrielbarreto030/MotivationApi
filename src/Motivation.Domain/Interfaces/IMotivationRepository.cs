@@ -10,5 +10,6 @@ namespace Motivation.Domain.Interfaces
         Task<Motivation.Domain.Entities.Motivation?> GetByIdAsync(Guid motivationId);
         Task<Motivation.Domain.Entities.Motivation[]> GetByGoalAsync(Guid goalId);
         Task DeleteAsync(Guid motivationId);
+        Task UpdateAsync(Motivation.Domain.Entities.Motivation motivation);
     }
 }

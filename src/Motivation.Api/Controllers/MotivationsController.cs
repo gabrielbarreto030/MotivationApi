@@ -104,6 +104,45 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Atualiza o texto de uma frase motivacional de uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="motivationId">Id da motivação a atualizar.</param>
+        /// <param name="dto">Novo texto da frase motivacional.</param>
+        /// <returns>Motivação atualizada com id e texto.</returns>
+        /// <response code="200">Motivação atualizada com sucesso.</response>
+        /// <response code="400">Dados inválidos, meta ou motivação inexistente.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        [HttpPut("{motivationId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> Update(Guid goalId, Guid motivationId, [FromBody] UpdateMotivationRequest dto)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _motivationService.UpdateAsync(goalId, motivationId, dto, userId.Value);
+                _logger.LogInformation("Motivation {MotivationId} updated on goal {GoalId} by user {UserId}", motivationId, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request updating motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized motivation update attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
         /// Remove uma frase motivacional de uma meta do usuário autenticado.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>

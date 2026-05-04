@@ -52,6 +52,13 @@ namespace Motivation.Infrastructure.Repositories
             }
         }
 
+        public async Task UpdateAsync(Motivation.Domain.Entities.Motivation motivation)
+        {
+            _db.Motivations.Update(motivation);
+            await _db.SaveChangesAsync();
+            InvalidateGoalCache(motivation.GoalId);
+        }
+
         private void InvalidateGoalCache(Guid goalId)
         {
             var key = GetCacheKey(goalId);

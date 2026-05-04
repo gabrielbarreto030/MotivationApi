@@ -20,5 +20,11 @@ namespace Motivation.Domain.Entities
             GoalId = goalId;
             Text = text;
         }
+
+        public void UpdateText(string newText)
+        {
+            if (string.IsNullOrWhiteSpace(newText)) throw new ArgumentException("Text is required", nameof(newText));
+            Text = newText;
+        }
     }
 }

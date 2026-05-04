@@ -76,5 +76,32 @@ namespace Motivation.Application.Services
 
             return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text));
         }
+
+        public async Task<AddMotivationResponse> UpdateAsync(Guid goalId, Guid motivationId, UpdateMotivationRequest request, Guid userId)
+        {
+            if (string.IsNullOrWhiteSpace(request.Text))
+                throw new ArgumentException("Text is required", nameof(request.Text));
+
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to update motivations of this goal");
+
+            var motivation = await _motivationRepository.GetByIdAsync(motivationId);
+            if (motivation == null)
+                throw new ArgumentException("Motivation not found", nameof(motivationId));
+
+            if (motivation.GoalId != goalId)
+                throw new ArgumentException("Motivation does not belong to this goal", nameof(motivationId));
+
+            motivation.UpdateText(request.Text);
+            await _motivationRepository.UpdateAsync(motivation);
+
+            _logger.LogInformation("Motivation {MotivationId} updated on goal {GoalId} by user {UserId}", motivationId, goalId, userId);
+
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text);
+        }
     }
 }

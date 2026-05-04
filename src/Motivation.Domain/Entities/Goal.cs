@@ -17,7 +17,7 @@ namespace Motivation.Domain.Entities
 
         protected Goal() { }
 
-        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null, GoalPriority priority = GoalPriority.None, string? notes = null)
+        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null, GoalPriority priority = GoalPriority.None, string? notes = null, bool isArchived = false)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty", nameof(userId));
@@ -33,6 +33,7 @@ namespace Motivation.Domain.Entities
             CreatedAt = createdAt;
             Deadline = deadline;
             Notes = notes;
+            IsArchived = isArchived;
         }
 
         public void UpdateStatus(GoalStatus newStatus)
