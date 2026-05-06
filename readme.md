@@ -85,6 +85,8 @@ Day 41: Step due date (optional DueDate on Step entity: set on create/update, cl
 Day 42: Step priority levels (StepPriority enum: None/Low/Medium/High + filter and sort by priority on steps listing) - OK
 Day 43: Goal archiving (IsArchived flag on Goal entity: POST /goals/{id}/archive, DELETE /goals/{id}/archive, GET /goals/archived; default listing excludes archived; includeArchived=true query param to include them) - OK
 Day 44: List Motivations (GET /goals/{goalId}/motivations endpoint: ListByGoalAsync added to IMotivationService and MotivationService, returns all motivational phrases for a goal with ownership validation) - OK
+Day 45: Update Motivation text (allow editing motivation text via PUT /goals/{goalId}/motivations/{motivationId}: UpdateText method on Motivation entity, UpdateAsync on repository and service, returns updated motivation; also fixed Goal defensive copy to preserve IsArchived) - OK
+Day 46: Step completion undo (allow reverting a completed step back to incomplete via DELETE /goals/{goalId}/steps/{stepId}/complete: Uncomplete method on Step entity, UncompleteAsync on IStepService and StepService, returns updated step with IsCompleted=false and CompletedAt=null; throws 409 if step is not completed) - OK
 
 ---
 

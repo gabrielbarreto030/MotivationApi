@@ -198,6 +198,51 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Reverte um passo concluído de volta ao estado incompleto.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="stepId">Id do passo a reverter.</param>
+        /// <returns>Passo atualizado com IsCompleted = false e CompletedAt = null.</returns>
+        /// <response code="200">Passo revertido para incompleto com sucesso.</response>
+        /// <response code="400">StepId inválido ou passo não pertence à meta.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        /// <response code="409">Passo já estava incompleto.</response>
+        [HttpDelete("{stepId}/complete")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Uncomplete(Guid goalId, Guid stepId)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _stepService.UncompleteAsync(goalId, stepId, userId.Value);
+                _logger.LogInformation("Step {StepId} reverted to incomplete for goal {GoalId} by user {UserId}", stepId, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request uncompleting step {StepId}: {Message}", stepId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Invalid operation uncompleting step {StepId}: {Message}", stepId, ex.Message);
+                return Conflict(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _logger.LogWarning("Unauthorized step uncomplete attempt on goal {GoalId} by user {UserId}", goalId, userId.Value);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
         /// Marca um passo como concluído, registrando a data/hora de conclusão.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>

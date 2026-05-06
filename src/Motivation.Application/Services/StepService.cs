@@ -163,6 +163,34 @@ namespace Motivation.Application.Services
             return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(completedAt), step.Priority);
         }
 
+        public async Task<CreateStepResponse> UncompleteAsync(Guid goalId, Guid stepId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to update steps of this goal");
+
+            var step = await _stepRepository.GetByIdAsync(stepId);
+            if (step == null)
+                throw new ArgumentException("Step not found", nameof(stepId));
+
+            if (step.GoalId != goalId)
+                throw new ArgumentException("Step does not belong to the specified goal", nameof(stepId));
+
+            if (!step.IsCompleted)
+                throw new InvalidOperationException("Step is not completed");
+
+            step.Uncomplete();
+            await _stepRepository.UpdateAsync(step);
+
+            _logger.LogInformation("Step {StepId} marked as uncompleted for goal {GoalId} by user {UserId}", stepId, goalId, userId);
+
+            var now = DateTime.UtcNow;
+            return new CreateStepResponse(step.Id, step.GoalId, step.Title, step.IsCompleted, step.CompletedAt, step.Notes, step.DueDate, step.IsOverdue(now), step.Priority);
+        }
+
         public async Task<CreateStepResponse> UpdateAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId)
         {
             var goal = await _goalRepository.GetByIdAsync(goalId);

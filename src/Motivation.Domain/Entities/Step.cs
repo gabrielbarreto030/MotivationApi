@@ -36,6 +36,12 @@ namespace Motivation.Domain.Entities
             CompletedAt = completedAt;
         }
 
+        public void Uncomplete()
+        {
+            IsCompleted = false;
+            CompletedAt = null;
+        }
+
         public void UpdateTitle(string title)
         {
             if (string.IsNullOrWhiteSpace(title))
