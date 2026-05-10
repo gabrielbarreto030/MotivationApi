@@ -259,5 +259,44 @@ namespace Motivation.Application.Services
 
             return archived.Select(g => ToCreateResponse(g, now)).ToArray();
         }
+
+        public async Task<CreateGoalResponse> CloneAsync(Guid id, Guid userId)
+        {
+            var original = await _goalRepository.GetByIdAsync(id);
+            if (original == null)
+                throw new ArgumentException("Goal not found", nameof(id));
+
+            if (original.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to clone this goal");
+
+            var now = DateTime.UtcNow;
+            var cloned = new Goal(
+                Guid.NewGuid(), userId,
+                $"Copy of {original.Title}",
+                original.Description,
+                GoalStatus.Pending,
+                now,
+                original.Deadline,
+                original.Priority,
+                original.Notes);
+
+            await _goalRepository.AddAsync(cloned);
+
+            var steps = await _stepRepository.GetByGoalAsync(id);
+            foreach (var step in steps)
+            {
+                var clonedStep = new Step(
+                    Guid.NewGuid(), cloned.Id,
+                    step.Title,
+                    step.Notes,
+                    step.DueDate,
+                    step.Priority);
+                await _stepRepository.AddAsync(clonedStep);
+            }
+
+            _logger.LogInformation("Goal {OriginalGoalId} cloned as {NewGoalId} by user {UserId}", id, cloned.Id, userId);
+
+            return ToCreateResponse(cloned, now);
+        }
     }
 }

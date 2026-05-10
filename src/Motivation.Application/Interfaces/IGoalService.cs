@@ -17,5 +17,6 @@ namespace Motivation.Application.Interfaces
         Task<CreateGoalResponse> ArchiveAsync(Guid id, Guid userId);
         Task<CreateGoalResponse> UnarchiveAsync(Guid id, Guid userId);
         Task<CreateGoalResponse[]> GetArchivedAsync(Guid userId);
+        Task<CreateGoalResponse> CloneAsync(Guid id, Guid userId);
     }
 }

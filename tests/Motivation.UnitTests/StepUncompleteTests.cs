@@ -29,7 +29,7 @@ namespace Motivation.UnitTests
             _context = new AppDbContext(options);
             _cache = new MemoryCache(new MemoryCacheOptions());
             _goalRepository = new GoalRepository(_context, _cache);
-            _stepRepository = new StepRepository(_context);
+            _stepRepository = new StepRepository(_context, _cache);
             _stepService = new StepService(_stepRepository, _goalRepository, NullLogger<StepService>.Instance);
         }
 

@@ -257,5 +257,27 @@ namespace Motivation.Api.Controllers
             _logger.LogInformation("Goal {GoalId} deleted by user {UserId}", id, userId.Value);
             return NoContent();
         }
+
+        /// <summary>
+        /// Clona uma meta do usuário autenticado, duplicando todos os seus passos com completion resetada.
+        /// </summary>
+        /// <param name="id">Id da meta a clonar.</param>
+        /// <returns>Nova meta clonada com título prefixado por "Copy of".</returns>
+        /// <response code="201">Meta clonada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="404">Meta não encontrada ou não pertence ao usuário.</response>
+        [HttpPost("{id}/clone")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Clone(Guid id)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.CloneAsync(id, userId.Value);
+            _logger.LogInformation("Goal {GoalId} cloned as {NewGoalId} by user {UserId}", id, result.Id, userId.Value);
+            return CreatedAtAction(nameof(Clone), new { id = result.Id }, result);
+        }
     }
 }
