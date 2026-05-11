@@ -87,6 +87,8 @@ Day 43: Goal archiving (IsArchived flag on Goal entity: POST /goals/{id}/archive
 Day 44: List Motivations (GET /goals/{goalId}/motivations endpoint: ListByGoalAsync added to IMotivationService and MotivationService, returns all motivational phrases for a goal with ownership validation) - OK
 Day 45: Update Motivation text (allow editing motivation text via PUT /goals/{goalId}/motivations/{motivationId}: UpdateText method on Motivation entity, UpdateAsync on repository and service, returns updated motivation; also fixed Goal defensive copy to preserve IsArchived) - OK
 Day 46: Step completion undo (allow reverting a completed step back to incomplete via DELETE /goals/{goalId}/steps/{stepId}/complete: Uncomplete method on Step entity, UncompleteAsync on IStepService and StepService, returns updated step with IsCompleted=false and CompletedAt=null; throws 409 if step is not completed) - OK
+Day 47: Goal clone (POST /goals/{id}/clone: duplicates a goal with all its steps; cloned goal gets "Copy of" title prefix, Pending status, not archived; steps are cloned with title/notes/dueDate/priority preserved but completion reset to false; CloneAsync added to IGoalService and GoalService; fixed StepUncompleteTests constructor) - OK
+Day 48: Change user password (PUT /users/password: authenticated user submits currentPassword + newPassword; validates current password matches, rejects if new equals current, updates hash and persists; UpdatePassword on User entity, UpdateAsync on IUserRepository/UserRepository with cache invalidation, ChangePasswordAsync on IAuthService/AuthService; returns 204 No Content on success, 401 if current password wrong, 400 for validation errors) - OK
 
 ---
 

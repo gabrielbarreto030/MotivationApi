@@ -8,5 +8,6 @@ namespace Motivation.Application.Interfaces
     {
         Task<RegisterResponse> RegisterAsync(RegisterRequest request);
         Task<User> ValidateCredentialsAsync(LoginRequest request);
+        Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
     }
 }

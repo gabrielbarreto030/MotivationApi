@@ -25,6 +25,14 @@ namespace Motivation.Infrastructure.Repositories
             await _db.SaveChangesAsync();
         }
 
+        public async Task UpdateAsync(User user)
+        {
+            _db.Users.Update(user);
+            await _db.SaveChangesAsync();
+            _cache.Remove(GetIdCacheKey(user.Id));
+            _cache.Remove(GetEmailCacheKey(user.Email));
+        }
+
         public async Task<User> GetByIdAsync(Guid userId)
         {
             var key = GetIdCacheKey(userId);

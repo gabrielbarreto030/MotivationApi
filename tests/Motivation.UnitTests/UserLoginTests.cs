@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging.Abstractions;
 using Motivation.Application.DTOs;
 using Motivation.Application.Services;
 using Motivation.Domain.Entities;
@@ -42,7 +43,7 @@ namespace Motivation.UnitTests
             var user = new User(Guid.NewGuid(), "login@user.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
-            var authService = new AuthService(_userRepository);
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance);
 
             var result = await authService.ValidateCredentialsAsync(new LoginRequest("login@user.com", password));
             result.Email.Should().Be("login@user.com");
@@ -57,7 +58,7 @@ namespace Motivation.UnitTests
             var user = new User(Guid.NewGuid(), "login2@user.com", hashed, DateTime.UtcNow);
             await _userRepository.AddAsync(user);
 
-            var authService = new AuthService(_userRepository);
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance);
 
             Func<Task> act = async () =>
                 await authService.ValidateCredentialsAsync(new LoginRequest("login2@user.com", "wrong"));
@@ -67,7 +68,7 @@ namespace Motivation.UnitTests
         [Fact]
         public async Task ValidateCredentials_NonexistentUser_Throws()
         {
-            var authService = new AuthService(_userRepository);
+            var authService = new AuthService(_userRepository, NullLogger<AuthService>.Instance);
             Func<Task> act = async () =>
                 await authService.ValidateCredentialsAsync(new LoginRequest("no@user.com", "x"));
             await act.Should().ThrowAsync<Motivation.Application.Exceptions.AuthenticationFailedException>();

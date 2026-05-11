@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
 using Motivation.Application.Exceptions;
 using Motivation.Application.Interfaces;
@@ -11,10 +12,12 @@ namespace Motivation.Application.Services
     public class AuthService : IAuthService
     {
         private readonly IUserRepository _userRepository;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUserRepository userRepository)
+        public AuthService(IUserRepository userRepository, ILogger<AuthService> logger)
         {
             _userRepository = userRepository;
+            _logger = logger;
         }
 
         public async Task<RegisterResponse> RegisterAsync(RegisterRequest request)
@@ -50,6 +53,29 @@ namespace Motivation.Application.Services
                 throw new AuthenticationFailedException("Invalid credentials");
 
             return user;
+        }
+
+        public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+                throw new ArgumentException("Current password is required", nameof(request.CurrentPassword));
+            if (string.IsNullOrWhiteSpace(request.NewPassword))
+                throw new ArgumentException("New password is required", nameof(request.NewPassword));
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                throw new ArgumentException("User not found", nameof(userId));
+
+            if (!PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash))
+                throw new AuthenticationFailedException("Current password is incorrect");
+
+            if (PasswordHasher.Verify(request.NewPassword, user.PasswordHash))
+                throw new ArgumentException("New password must differ from current password", nameof(request.NewPassword));
+
+            user.UpdatePassword(PasswordHasher.Hash(request.NewPassword));
+            await _userRepository.UpdateAsync(user);
+
+            _logger.LogInformation("User {UserId} changed their password", userId);
         }
     }
 }

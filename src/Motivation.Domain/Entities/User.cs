@@ -23,5 +23,12 @@ namespace Motivation.Domain.Entities
             PasswordHash = passwordHash;
             CreatedAt = createdAt;
         }
+
+        public void UpdatePassword(string newHash)
+        {
+            if (string.IsNullOrWhiteSpace(newHash))
+                throw new ArgumentException("PasswordHash is required", nameof(newHash));
+            PasswordHash = newHash;
+        }
     }
 }

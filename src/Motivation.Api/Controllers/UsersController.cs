@@ -6,6 +6,7 @@ using Motivation.Api.Models;
 using Motivation.Application.DTOs;
 using Motivation.Application.Exceptions;
 using Motivation.Application.Interfaces;
+using Motivation.Application.Services;
 
 namespace Motivation.Api.Controllers
 {
@@ -63,6 +64,32 @@ namespace Motivation.Api.Controllers
                 return Unauthorized();
 
             return Ok(new { userId = userIdClaim.Value, message = "Access granted with valid token" });
+        }
+
+        [Authorize]
+        [HttpPut("password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto dto)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            if (!Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                await _authService.ChangePasswordAsync(userId, new ChangePasswordRequest(dto.CurrentPassword, dto.NewPassword));
+                return NoContent();
+            }
+            catch (AuthenticationFailedException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
     }
 }
