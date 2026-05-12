@@ -91,5 +91,36 @@ namespace Motivation.Api.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+        [Authorize]
+        [HttpPut("email")]
+        public async Task<IActionResult> ChangeEmail([FromBody] ChangeEmailRequestDto dto)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            if (!Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                await _authService.ChangeEmailAsync(userId, new ChangeEmailRequest(dto.CurrentPassword, dto.NewEmail));
+                _logger.LogInformation("User {UserId} changed their email", userId);
+                return NoContent();
+            }
+            catch (AuthenticationFailedException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (EmailAlreadyInUseException ex)
+            {
+                return Conflict(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

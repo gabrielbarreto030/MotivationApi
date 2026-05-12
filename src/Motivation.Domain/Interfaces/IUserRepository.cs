@@ -8,6 +8,7 @@ namespace Motivation.Domain.Interfaces
     {
         Task AddAsync(User user);
         Task UpdateAsync(User user);
+        Task UpdateEmailAsync(User user, string oldEmail);
         Task<User> GetByIdAsync(Guid userId);
         Task<User> GetByEmailAsync(string email);
     }

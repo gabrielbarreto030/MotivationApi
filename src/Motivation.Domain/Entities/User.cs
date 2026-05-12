@@ -30,5 +30,12 @@ namespace Motivation.Domain.Entities
                 throw new ArgumentException("PasswordHash is required", nameof(newHash));
             PasswordHash = newHash;
         }
+
+        public void UpdateEmail(string newEmail)
+        {
+            if (string.IsNullOrWhiteSpace(newEmail))
+                throw new ArgumentException("Email is required", nameof(newEmail));
+            Email = newEmail;
+        }
     }
 }

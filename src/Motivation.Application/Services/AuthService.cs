@@ -77,5 +77,33 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("User {UserId} changed their password", userId);
         }
+
+        public async Task ChangeEmailAsync(Guid userId, ChangeEmailRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+                throw new ArgumentException("Current password is required", nameof(request.CurrentPassword));
+            if (string.IsNullOrWhiteSpace(request.NewEmail))
+                throw new ArgumentException("New email is required", nameof(request.NewEmail));
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                throw new ArgumentException("User not found", nameof(userId));
+
+            if (!PasswordHasher.Verify(request.CurrentPassword, user.PasswordHash))
+                throw new AuthenticationFailedException("Current password is incorrect");
+
+            if (string.Equals(user.Email, request.NewEmail, StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("New email must differ from current email", nameof(request.NewEmail));
+
+            var existing = await _userRepository.GetByEmailAsync(request.NewEmail);
+            if (existing != null)
+                throw new EmailAlreadyInUseException(request.NewEmail);
+
+            var oldEmail = user.Email;
+            user.UpdateEmail(request.NewEmail);
+            await _userRepository.UpdateEmailAsync(user, oldEmail);
+
+            _logger.LogInformation("User {UserId} changed their email", userId);
+        }
     }
 }

@@ -33,6 +33,15 @@ namespace Motivation.Infrastructure.Repositories
             _cache.Remove(GetEmailCacheKey(user.Email));
         }
 
+        public async Task UpdateEmailAsync(User user, string oldEmail)
+        {
+            _db.Users.Update(user);
+            await _db.SaveChangesAsync();
+            _cache.Remove(GetIdCacheKey(user.Id));
+            _cache.Remove(GetEmailCacheKey(oldEmail));
+            _cache.Remove(GetEmailCacheKey(user.Email));
+        }
+
         public async Task<User> GetByIdAsync(Guid userId)
         {
             var key = GetIdCacheKey(userId);
