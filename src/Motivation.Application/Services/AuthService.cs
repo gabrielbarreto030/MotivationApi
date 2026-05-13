@@ -105,5 +105,22 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("User {UserId} changed their email", userId);
         }
+
+        public async Task DeleteAccountAsync(Guid userId, string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Password is required", nameof(password));
+
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                throw new ArgumentException("User not found", nameof(userId));
+
+            if (!PasswordHasher.Verify(password, user.PasswordHash))
+                throw new AuthenticationFailedException("Password is incorrect");
+
+            await _userRepository.DeleteAsync(user);
+
+            _logger.LogInformation("User {UserId} deleted their account", userId);
+        }
     }
 }

@@ -122,5 +122,32 @@ namespace Motivation.Api.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
+
+        [Authorize]
+        [HttpDelete("me")]
+        public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequestDto dto)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null)
+                return Unauthorized();
+
+            if (!Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            try
+            {
+                await _authService.DeleteAccountAsync(userId, dto.Password);
+                _logger.LogInformation("User {UserId} deleted their account", userId);
+                return NoContent();
+            }
+            catch (AuthenticationFailedException ex)
+            {
+                return Unauthorized(new { error = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

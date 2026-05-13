@@ -10,5 +10,6 @@ namespace Motivation.Application.Interfaces
         Task<User> ValidateCredentialsAsync(LoginRequest request);
         Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request);
         Task ChangeEmailAsync(Guid userId, ChangeEmailRequest request);
+        Task DeleteAccountAsync(Guid userId, string password);
     }
 }
