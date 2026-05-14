@@ -27,10 +27,10 @@ namespace Motivation.Application.Services
         }
 
         private static CreateGoalResponse ToCreateResponse(Goal g, DateTime now) =>
-            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived);
+            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned);
 
         private static UpdateGoalResponse ToUpdateResponse(Goal g, DateTime now) =>
-            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived);
+            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned);
 
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
         {
@@ -258,6 +258,62 @@ namespace Motivation.Application.Services
             _logger.LogInformation("Found {Count} archived goals for user {UserId}", archived.Length, userId);
 
             return archived.Select(g => ToCreateResponse(g, now)).ToArray();
+        }
+
+        public async Task<CreateGoalResponse> PinAsync(Guid id, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(id);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(id));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to pin this goal");
+
+            if (goal.IsPinned)
+                throw new InvalidOperationException("Goal is already pinned");
+
+            var allGoals = await _goalRepository.GetByUserAsync(userId);
+            int pinnedCount = allGoals.Count(g => g.IsPinned);
+            if (pinnedCount >= 3)
+                throw new InvalidOperationException("You can have at most 3 pinned goals");
+
+            goal.Pin();
+            await _goalRepository.UpdateAsync(goal);
+
+            _logger.LogInformation("Goal {GoalId} pinned by user {UserId}", id, userId);
+
+            return ToCreateResponse(goal, DateTime.UtcNow);
+        }
+
+        public async Task<CreateGoalResponse> UnpinAsync(Guid id, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(id);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(id));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to unpin this goal");
+
+            if (!goal.IsPinned)
+                throw new InvalidOperationException("Goal is not pinned");
+
+            goal.Unpin();
+            await _goalRepository.UpdateAsync(goal);
+
+            _logger.LogInformation("Goal {GoalId} unpinned by user {UserId}", id, userId);
+
+            return ToCreateResponse(goal, DateTime.UtcNow);
+        }
+
+        public async Task<CreateGoalResponse[]> GetPinnedAsync(Guid userId)
+        {
+            var now = DateTime.UtcNow;
+            var goals = await _goalRepository.GetByUserAsync(userId);
+            var pinned = goals.Where(g => g.IsPinned).ToArray();
+
+            _logger.LogInformation("Found {Count} pinned goals for user {UserId}", pinned.Length, userId);
+
+            return pinned.Select(g => ToCreateResponse(g, now)).ToArray();
         }
 
         public async Task<CreateGoalResponse> CloneAsync(Guid id, Guid userId)

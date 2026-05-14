@@ -259,6 +259,86 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Retorna as metas fixadas (pinned) do usuário autenticado.
+        /// </summary>
+        /// <returns>Lista de metas fixadas (máx. 3).</returns>
+        /// <response code="200">Lista de metas fixadas retornada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        [HttpGet("pinned")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetPinned()
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.GetPinnedAsync(userId.Value);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Fixa uma meta do usuário autenticado (máx. 3 metas fixadas por usuário).
+        /// </summary>
+        /// <param name="id">Id da meta a fixar.</param>
+        /// <returns>Meta fixada.</returns>
+        /// <response code="200">Meta fixada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="404">Meta não encontrada ou não pertence ao usuário.</response>
+        /// <response code="409">Meta já fixada ou limite de 3 metas fixadas atingido.</response>
+        [HttpPost("{id}/pin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Pin(Guid id)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _goalService.PinAsync(id, userId.Value);
+                _logger.LogInformation("Goal {GoalId} pinned by user {UserId}", id, userId.Value);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Remove o fixado de uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="id">Id da meta a desafixar.</param>
+        /// <returns>Meta desafixada.</returns>
+        /// <response code="200">Meta desafixada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="404">Meta não encontrada ou não pertence ao usuário.</response>
+        /// <response code="409">Meta não está fixada.</response>
+        [HttpDelete("{id}/pin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Unpin(Guid id)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _goalService.UnpinAsync(id, userId.Value);
+                _logger.LogInformation("Goal {GoalId} unpinned by user {UserId}", id, userId.Value);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
         /// Clona uma meta do usuário autenticado, duplicando todos os seus passos com completion resetada.
         /// </summary>
         /// <param name="id">Id da meta a clonar.</param>

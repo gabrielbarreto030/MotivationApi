@@ -14,10 +14,11 @@ namespace Motivation.Domain.Entities
         public DateTime? Deadline { get; private set; }
         public string? Notes { get; private set; }
         public bool IsArchived { get; private set; }
+        public bool IsPinned { get; private set; }
 
         protected Goal() { }
 
-        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null, GoalPriority priority = GoalPriority.None, string? notes = null, bool isArchived = false)
+        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null, GoalPriority priority = GoalPriority.None, string? notes = null, bool isArchived = false, bool isPinned = false)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty", nameof(userId));
@@ -34,6 +35,7 @@ namespace Motivation.Domain.Entities
             Deadline = deadline;
             Notes = notes;
             IsArchived = isArchived;
+            IsPinned = isPinned;
         }
 
         public void UpdateStatus(GoalStatus newStatus)
@@ -73,6 +75,10 @@ namespace Motivation.Domain.Entities
         public void Archive() => IsArchived = true;
 
         public void Unarchive() => IsArchived = false;
+
+        public void Pin() => IsPinned = true;
+
+        public void Unpin() => IsPinned = false;
 
         public bool IsOverdue(DateTime now) =>
             Deadline.HasValue
