@@ -55,7 +55,7 @@ namespace Motivation.Infrastructure.Repositories
             DetachIfTracked(id);
 
             // Return a defensive copy to prevent external mutations from corrupting the cache
-            return new Goal(cached.Id, cached.UserId, cached.Title, cached.Description, cached.Status, cached.CreatedAt, cached.Deadline, cached.Priority, cached.Notes, cached.IsArchived, cached.IsPinned);
+            return new Goal(cached.Id, cached.UserId, cached.Title, cached.Description, cached.Status, cached.CreatedAt, cached.Deadline, cached.Priority, cached.Notes, cached.IsArchived, cached.IsPinned, cached.CompletedAt);
         }
 
         public async Task UpdateAsync(Goal goal)

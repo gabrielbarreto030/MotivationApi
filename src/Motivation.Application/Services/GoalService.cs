@@ -27,10 +27,10 @@ namespace Motivation.Application.Services
         }
 
         private static CreateGoalResponse ToCreateResponse(Goal g, DateTime now) =>
-            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned);
+            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned, g.CompletedAt);
 
         private static UpdateGoalResponse ToUpdateResponse(Goal g, DateTime now) =>
-            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned);
+            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned, g.CompletedAt);
 
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
         {

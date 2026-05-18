@@ -15,10 +15,11 @@ namespace Motivation.Domain.Entities
         public string? Notes { get; private set; }
         public bool IsArchived { get; private set; }
         public bool IsPinned { get; private set; }
+        public DateTime? CompletedAt { get; private set; }
 
         protected Goal() { }
 
-        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null, GoalPriority priority = GoalPriority.None, string? notes = null, bool isArchived = false, bool isPinned = false)
+        public Goal(Guid id, Guid userId, string title, string description, GoalStatus status, DateTime createdAt, DateTime? deadline = null, GoalPriority priority = GoalPriority.None, string? notes = null, bool isArchived = false, bool isPinned = false, DateTime? completedAt = null)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (userId == Guid.Empty) throw new ArgumentException("UserId cannot be empty", nameof(userId));
@@ -36,10 +37,15 @@ namespace Motivation.Domain.Entities
             Notes = notes;
             IsArchived = isArchived;
             IsPinned = isPinned;
+            CompletedAt = completedAt;
         }
 
         public void UpdateStatus(GoalStatus newStatus)
         {
+            if (newStatus == GoalStatus.Completed && Status != GoalStatus.Completed)
+                CompletedAt = DateTime.UtcNow;
+            else if (newStatus != GoalStatus.Completed)
+                CompletedAt = null;
             Status = newStatus;
         }
 
