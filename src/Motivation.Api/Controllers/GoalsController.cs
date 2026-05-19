@@ -105,7 +105,7 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista as metas do usuário autenticado com paginação, filtro e ordenação opcionais.
+        /// Lista as metas do usuário autenticado com paginação, filtro, ordenação e busca por palavra-chave.
         /// </summary>
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10, máximo: 50).</param>
@@ -114,6 +114,7 @@ namespace Motivation.Api.Controllers
         /// <param name="sortBy">Campo de ordenação: title, status, priority, createdAt (padrão: createdAt).</param>
         /// <param name="sortOrder">Direção: asc (padrão) ou desc.</param>
         /// <param name="includeArchived">Incluir metas arquivadas (padrão: false).</param>
+        /// <param name="search">Filtrar por palavra-chave no título ou descrição (case-insensitive, opcional).</param>
         /// <returns>Resposta paginada com metas do usuário.</returns>
         /// <response code="200">Lista paginada retornada com sucesso.</response>
         /// <response code="401">Token ausente ou inválido.</response>
@@ -127,7 +128,8 @@ namespace Motivation.Api.Controllers
             [FromQuery] string? priority = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] string? sortOrder = null,
-            [FromQuery] bool includeArchived = false)
+            [FromQuery] bool includeArchived = false,
+            [FromQuery] string? search = null)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
@@ -142,7 +144,7 @@ namespace Motivation.Api.Controllers
                 Enum.TryParse<Motivation.Domain.Entities.GoalPriority>(priority, ignoreCase: true, out var parsedPriority))
                 priorityFilter = parsedPriority;
 
-            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder, priorityFilter, includeArchived);
+            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder, priorityFilter, includeArchived, search);
             var result = await _goalService.ListByUserFilteredAsync(userId.Value, filterRequest);
             return Ok(result);
         }

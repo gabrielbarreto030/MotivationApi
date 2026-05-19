@@ -86,6 +86,10 @@ namespace Motivation.Application.Services
                 filtered = filtered.Where(g => g.Status == request.Status.Value);
             if (request.Priority.HasValue)
                 filtered = filtered.Where(g => g.Priority == request.Priority.Value);
+            if (request.Search != null)
+                filtered = filtered.Where(g =>
+                    g.Title.Contains(request.Search, StringComparison.OrdinalIgnoreCase) ||
+                    g.Description.Contains(request.Search, StringComparison.OrdinalIgnoreCase));
 
             IEnumerable<Goal> sorted = request.SortBy switch
             {
@@ -112,9 +116,9 @@ namespace Motivation.Application.Services
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}, priority: {Priority}, sortBy: {SortBy}, sortOrder: {SortOrder}) for user {UserId}",
+                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}, priority: {Priority}, sortBy: {SortBy}, sortOrder: {SortOrder}, search: {Search}) for user {UserId}",
                 items.Length, totalCount, request.Page, request.PageSize,
-                request.Status?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.SortBy, request.SortOrder, userId);
+                request.Status?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.SortBy, request.SortOrder, request.Search ?? "none", userId);
 
             return new PagedResponse<CreateGoalResponse>(items, totalCount, request.Page, request.PageSize);
         }

@@ -133,7 +133,7 @@ namespace Motivation.UnitTests
             var goal = await SeedGoalAsync();
             var before = DateTime.UtcNow;
 
-            var result = await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest { Status = "Completed" }, _userId);
+            var result = await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest(null, null, "Completed"), _userId);
 
             result.CompletedAt.Should().NotBeNull();
             result.CompletedAt.Should().BeOnOrAfter(before);
@@ -143,9 +143,9 @@ namespace Motivation.UnitTests
         public async Task UpdateAsync_StatusToPending_CompletedAtIsNull()
         {
             var goal = await SeedGoalAsync();
-            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest { Status = "Completed" }, _userId);
+            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest(null, null, "Completed"), _userId);
 
-            var result = await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest { Status = "Pending" }, _userId);
+            var result = await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest(null, null, "Pending"), _userId);
 
             result.CompletedAt.Should().BeNull();
         }
@@ -155,7 +155,7 @@ namespace Motivation.UnitTests
         {
             var goal = await SeedGoalAsync();
 
-            var result = await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest { Title = "New Title" }, _userId);
+            var result = await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest("New Title", null, null), _userId);
 
             result.CompletedAt.Should().BeNull();
         }
@@ -176,7 +176,7 @@ namespace Motivation.UnitTests
         public async Task UpdateAsync_CompletedAt_PersistedToRepository()
         {
             var goal = await SeedGoalAsync();
-            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest { Status = "Completed" }, _userId);
+            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest(null, null, "Completed"), _userId);
 
             var stored = await _goalRepository.GetByIdAsync(goal.Id);
 
@@ -187,8 +187,8 @@ namespace Motivation.UnitTests
         public async Task UpdateAsync_RevertFromCompleted_ClearsCompletedAtInRepository()
         {
             var goal = await SeedGoalAsync();
-            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest { Status = "Completed" }, _userId);
-            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest { Status = "InProgress" }, _userId);
+            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest(null, null, "Completed"), _userId);
+            await _goalService.UpdateAsync(goal.Id, new UpdateGoalRequest(null, null, "InProgress"), _userId);
 
             var stored = await _goalRepository.GetByIdAsync(goal.Id);
 
