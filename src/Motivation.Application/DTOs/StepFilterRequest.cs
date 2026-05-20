@@ -14,7 +14,7 @@ namespace Motivation.Application.DTOs
         {
             IsCompleted = isCompleted;
             Priority = priority;
-            SortBy = sortBy?.ToLowerInvariant() ?? "title";
+            SortBy = sortBy?.ToLowerInvariant() ?? "order";
             SortOrder = sortOrder?.ToLowerInvariant() == "desc" ? "desc" : "asc";
         }
     }

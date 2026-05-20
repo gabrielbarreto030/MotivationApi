@@ -243,6 +243,45 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Define a posição/ordem de exibição de um passo dentro da meta.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="stepId">Id do passo a reordenar.</param>
+        /// <param name="dto">Novo valor de Order (deve ser &gt;= 1).</param>
+        /// <returns>Passo atualizado com o novo valor de Order.</returns>
+        /// <response code="200">Passo reordenado com sucesso.</response>
+        /// <response code="400">Order inválido ou passo não pertence à meta.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        [HttpPut("{stepId}/order")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> Reorder(Guid goalId, Guid stepId, [FromBody] ReorderStepRequest dto)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _stepService.ReorderAsync(goalId, stepId, dto, userId.Value);
+                _logger.LogInformation("Step {StepId} reordered to {Order} for goal {GoalId} by user {UserId}", stepId, dto.Order, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request reordering step {StepId}: {Message}", stepId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _logger.LogWarning("Unauthorized step reorder attempt on goal {GoalId} by user {UserId}", goalId, userId.Value);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
         /// Marca um passo como concluído, registrando a data/hora de conclusão.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>

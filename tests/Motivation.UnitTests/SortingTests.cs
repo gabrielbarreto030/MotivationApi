@@ -83,10 +83,10 @@ namespace Motivation.UnitTests
         // ── StepFilterRequest sorting defaults ───────────────────────────────
 
         [Fact]
-        public void StepFilterRequest_DefaultSortBy_IsTitle()
+        public void StepFilterRequest_DefaultSortBy_IsOrder()
         {
             var req = new StepFilterRequest();
-            req.SortBy.Should().Be("title");
+            req.SortBy.Should().Be("order");
             req.SortOrder.Should().Be("asc");
         }
 
@@ -304,19 +304,19 @@ namespace Motivation.UnitTests
         }
 
         [Fact]
-        public async Task StepService_ListFiltered_DefaultSort_SortsByTitleAsc()
+        public async Task StepService_ListFiltered_DefaultSort_SortsByOrderAsc()
         {
             var userId = Guid.NewGuid();
             var goal = new Goal(Guid.NewGuid(), userId, "Goal", "d", GoalStatus.Pending, DateTime.UtcNow);
             await _goalRepository.AddAsync(goal);
 
-            await _stepRepository.AddAsync(new Step(Guid.NewGuid(), goal.Id, "Zeta"));
-            await _stepRepository.AddAsync(new Step(Guid.NewGuid(), goal.Id, "Alpha"));
+            await _stepRepository.AddAsync(new Step(Guid.NewGuid(), goal.Id, "Zeta", order: 1));
+            await _stepRepository.AddAsync(new Step(Guid.NewGuid(), goal.Id, "Alpha", order: 2));
 
             var result = await _stepService.ListByGoalFilteredAsync(goal.Id, userId, new StepFilterRequest());
 
-            result.Items[0].Title.Should().Be("Alpha");
-            result.Items[1].Title.Should().Be("Zeta");
+            result.Items[0].Title.Should().Be("Zeta");
+            result.Items[1].Title.Should().Be("Alpha");
         }
 
         [Fact]

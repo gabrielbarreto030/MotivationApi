@@ -12,10 +12,11 @@ namespace Motivation.Domain.Entities
         public string? Notes { get; private set; }
         public DateTime? DueDate { get; private set; }
         public StepPriority Priority { get; private set; }
+        public int Order { get; private set; }
 
         protected Step() { }
 
-        public Step(Guid id, Guid goalId, string title, string? notes = null, DateTime? dueDate = null, StepPriority priority = StepPriority.None)
+        public Step(Guid id, Guid goalId, string title, string? notes = null, DateTime? dueDate = null, StepPriority priority = StepPriority.None, int order = 0)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (goalId == Guid.Empty) throw new ArgumentException("GoalId cannot be empty", nameof(goalId));
@@ -28,6 +29,7 @@ namespace Motivation.Domain.Entities
             Notes = notes;
             DueDate = dueDate;
             Priority = priority;
+            Order = order;
         }
 
         public void MarkCompleted(DateTime completedAt)
@@ -62,6 +64,12 @@ namespace Motivation.Domain.Entities
         public void UpdatePriority(StepPriority priority)
         {
             Priority = priority;
+        }
+
+        public void UpdateOrder(int order)
+        {
+            if (order < 1) throw new ArgumentException("Order must be greater than zero", nameof(order));
+            Order = order;
         }
 
         public bool IsOverdue(DateTime now) =>

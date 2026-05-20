@@ -10,5 +10,6 @@ namespace Motivation.Domain.Interfaces
         Task<Step?> GetByIdAsync(Guid stepId);
         Task<Step[]> GetByGoalAsync(Guid goalId);
         Task UpdateAsync(Step step);
+        Task<int> CountByGoalAsync(Guid goalId);
     }
 }

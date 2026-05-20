@@ -49,6 +49,11 @@ namespace Motivation.Infrastructure.Repositories
             InValidateGoalCache(step.GoalId);
         }
 
+        public async Task<int> CountByGoalAsync(Guid goalId)
+        {
+            return await _db.Steps.CountAsync(s => s.GoalId == goalId);
+        }
+
         private void InValidateGoalCache(Guid goalId)
         {
             var key = GetCacheKey(goalId);
