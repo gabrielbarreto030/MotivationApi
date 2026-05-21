@@ -11,7 +11,9 @@ namespace Motivation.Application.DTOs
         public bool IncludeArchived { get; init; }
         public string? Search { get; init; }
 
-        public GoalFilterRequest(int page = 1, int pageSize = 10, GoalStatus? status = null, string? sortBy = null, string? sortOrder = null, GoalPriority? priority = null, bool includeArchived = false, string? search = null)
+        public string? Tag { get; init; }
+
+        public GoalFilterRequest(int page = 1, int pageSize = 10, GoalStatus? status = null, string? sortBy = null, string? sortOrder = null, GoalPriority? priority = null, bool includeArchived = false, string? search = null, string? tag = null)
             : base(page, pageSize)
         {
             Status = status;
@@ -20,6 +22,7 @@ namespace Motivation.Application.DTOs
             SortOrder = sortOrder?.ToLowerInvariant() == "desc" ? "desc" : "asc";
             IncludeArchived = includeArchived;
             Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
+            Tag = string.IsNullOrWhiteSpace(tag) ? null : tag.Trim();
         }
     }
 }

@@ -115,6 +115,7 @@ namespace Motivation.Api.Controllers
         /// <param name="sortOrder">Direção: asc (padrão) ou desc.</param>
         /// <param name="includeArchived">Incluir metas arquivadas (padrão: false).</param>
         /// <param name="search">Filtrar por palavra-chave no título ou descrição (case-insensitive, opcional).</param>
+        /// <param name="tag">Filtrar por tag exata (case-insensitive, opcional).</param>
         /// <returns>Resposta paginada com metas do usuário.</returns>
         /// <response code="200">Lista paginada retornada com sucesso.</response>
         /// <response code="401">Token ausente ou inválido.</response>
@@ -129,7 +130,8 @@ namespace Motivation.Api.Controllers
             [FromQuery] string? sortBy = null,
             [FromQuery] string? sortOrder = null,
             [FromQuery] bool includeArchived = false,
-            [FromQuery] string? search = null)
+            [FromQuery] string? search = null,
+            [FromQuery] string? tag = null)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
@@ -144,7 +146,7 @@ namespace Motivation.Api.Controllers
                 Enum.TryParse<Motivation.Domain.Entities.GoalPriority>(priority, ignoreCase: true, out var parsedPriority))
                 priorityFilter = parsedPriority;
 
-            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder, priorityFilter, includeArchived, search);
+            var filterRequest = new GoalFilterRequest(page, pageSize, statusFilter, sortBy, sortOrder, priorityFilter, includeArchived, search, tag);
             var result = await _goalService.ListByUserFilteredAsync(userId.Value, filterRequest);
             return Ok(result);
         }

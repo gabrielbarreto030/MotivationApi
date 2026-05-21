@@ -27,10 +27,10 @@ namespace Motivation.Application.Services
         }
 
         private static CreateGoalResponse ToCreateResponse(Goal g, DateTime now) =>
-            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned, g.CompletedAt);
+            new CreateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned, g.CompletedAt, g.Tags);
 
         private static UpdateGoalResponse ToUpdateResponse(Goal g, DateTime now) =>
-            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned, g.CompletedAt);
+            new UpdateGoalResponse(g.Id, g.Title, g.Description, g.Status, g.Priority, g.CreatedAt, g.Deadline, g.IsOverdue(now), g.Notes, g.IsArchived, g.IsPinned, g.CompletedAt, g.Tags);
 
         public async Task<CreateGoalResponse> CreateAsync(CreateGoalRequest request, Guid userId)
         {
@@ -41,6 +41,8 @@ namespace Motivation.Application.Services
 
             var now = DateTime.UtcNow;
             var goal = new Goal(Guid.NewGuid(), userId, request.Title, request.Description, GoalStatus.Pending, now, request.Deadline, request.Priority, request.Notes);
+            if (request.Tags != null)
+                goal.SetTags(request.Tags);
             await _goalRepository.AddAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} created for user {UserId} with title '{Title}'", goal.Id, userId, goal.Title);
@@ -90,6 +92,9 @@ namespace Motivation.Application.Services
                 filtered = filtered.Where(g =>
                     g.Title.Contains(request.Search, StringComparison.OrdinalIgnoreCase) ||
                     g.Description.Contains(request.Search, StringComparison.OrdinalIgnoreCase));
+            if (request.Tag != null)
+                filtered = filtered.Where(g =>
+                    g.Tags.Any(t => t.Equals(request.Tag, StringComparison.OrdinalIgnoreCase)));
 
             IEnumerable<Goal> sorted = request.SortBy switch
             {
@@ -116,9 +121,9 @@ namespace Motivation.Application.Services
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}, priority: {Priority}, sortBy: {SortBy}, sortOrder: {SortOrder}, search: {Search}) for user {UserId}",
+                "Listed {Count}/{Total} goals (page {Page}, pageSize {PageSize}, status: {Status}, priority: {Priority}, sortBy: {SortBy}, sortOrder: {SortOrder}, search: {Search}, tag: {Tag}) for user {UserId}",
                 items.Length, totalCount, request.Page, request.PageSize,
-                request.Status?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.SortBy, request.SortOrder, request.Search ?? "none", userId);
+                request.Status?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.SortBy, request.SortOrder, request.Search ?? "none", request.Tag ?? "none", userId);
 
             return new PagedResponse<CreateGoalResponse>(items, totalCount, request.Page, request.PageSize);
         }
@@ -136,7 +141,7 @@ namespace Motivation.Application.Services
             if (!string.IsNullOrWhiteSpace(request.Status) && Enum.TryParse<GoalStatus>(request.Status, true, out var parsedStatus))
                 status = parsedStatus;
 
-            goal.Update(request.Title, request.Description, status, request.Deadline, request.ClearDeadline, request.Priority, request.Notes, request.ClearNotes);
+            goal.Update(request.Title, request.Description, status, request.Deadline, request.ClearDeadline, request.Priority, request.Notes, request.ClearNotes, request.Tags, request.ClearTags);
             await _goalRepository.UpdateAsync(goal);
 
             _logger.LogInformation("Goal {GoalId} updated by user {UserId}", id, userId);
