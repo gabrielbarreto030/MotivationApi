@@ -8,14 +8,16 @@ namespace Motivation.Application.DTOs
         public StepPriority? Priority { get; init; }
         public string SortBy { get; init; }
         public string SortOrder { get; init; }
+        public string? Tag { get; init; }
 
-        public StepFilterRequest(int page = 1, int pageSize = 10, bool? isCompleted = null, string? sortBy = null, string? sortOrder = null, StepPriority? priority = null)
+        public StepFilterRequest(int page = 1, int pageSize = 10, bool? isCompleted = null, string? sortBy = null, string? sortOrder = null, StepPriority? priority = null, string? tag = null)
             : base(page, pageSize)
         {
             IsCompleted = isCompleted;
             Priority = priority;
             SortBy = sortBy?.ToLowerInvariant() ?? "order";
             SortOrder = sortOrder?.ToLowerInvariant() == "desc" ? "desc" : "asc";
+            Tag = string.IsNullOrWhiteSpace(tag) ? null : tag.Trim();
         }
     }
 }
