@@ -9,8 +9,9 @@ namespace Motivation.Application.DTOs
         public string SortBy { get; init; }
         public string SortOrder { get; init; }
         public string? Tag { get; init; }
+        public string? Search { get; init; }
 
-        public StepFilterRequest(int page = 1, int pageSize = 10, bool? isCompleted = null, string? sortBy = null, string? sortOrder = null, StepPriority? priority = null, string? tag = null)
+        public StepFilterRequest(int page = 1, int pageSize = 10, bool? isCompleted = null, string? sortBy = null, string? sortOrder = null, StepPriority? priority = null, string? tag = null, string? search = null)
             : base(page, pageSize)
         {
             IsCompleted = isCompleted;
@@ -18,6 +19,7 @@ namespace Motivation.Application.DTOs
             SortBy = sortBy?.ToLowerInvariant() ?? "order";
             SortOrder = sortOrder?.ToLowerInvariant() == "desc" ? "desc" : "asc";
             Tag = string.IsNullOrWhiteSpace(tag) ? null : tag.Trim();
+            Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
         }
     }
 }

@@ -40,6 +40,7 @@ namespace Motivation.Api.Controllers
         /// <param name="sortBy">Campo de ordenação: title (padrão), isCompleted, completedAt, priority.</param>
         /// <param name="sortOrder">Direção: asc (padrão) ou desc.</param>
         /// <param name="tag">Filtrar por tag (correspondência exata, insensível a maiúsculas, opcional).</param>
+        /// <param name="search">Filtrar por palavra-chave: busca parcial, insensível a maiúsculas, em Title e Notes (opcional).</param>
         /// <returns>Resposta paginada com passos da meta.</returns>
         /// <response code="200">Lista paginada de passos retornada com sucesso.</response>
         /// <response code="400">GoalId inválido ou meta não encontrada.</response>
@@ -58,19 +59,20 @@ namespace Motivation.Api.Controllers
             [FromQuery] StepPriority? priority = null,
             [FromQuery] string? sortBy = null,
             [FromQuery] string? sortOrder = null,
-            [FromQuery] string? tag = null)
+            [FromQuery] string? tag = null,
+            [FromQuery] string? search = null)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var filterRequest = new StepFilterRequest(page, pageSize, isCompleted, sortBy, sortOrder, priority, tag);
+                var filterRequest = new StepFilterRequest(page, pageSize, isCompleted, sortBy, sortOrder, priority, tag, search);
                 var result = await _stepService.ListByGoalFilteredAsync(goalId, userId.Value, filterRequest);
                 _logger.LogInformation(
-                    "Listed {Count}/{Total} steps for goal {GoalId} by user {UserId} (isCompleted: {IsCompleted}, priority: {Priority}, tag: {Tag}, sortBy: {SortBy}, sortOrder: {SortOrder})",
+                    "Listed {Count}/{Total} steps for goal {GoalId} by user {UserId} (isCompleted: {IsCompleted}, priority: {Priority}, tag: {Tag}, search: {Search}, sortBy: {SortBy}, sortOrder: {SortOrder})",
                     result.Items.Count, result.TotalCount, goalId, userId.Value,
-                    isCompleted?.ToString() ?? "all", priority?.ToString() ?? "all", tag ?? "all", sortBy ?? "order", sortOrder ?? "asc");
+                    isCompleted?.ToString() ?? "all", priority?.ToString() ?? "all", tag ?? "all", search ?? "all", sortBy ?? "order", sortOrder ?? "asc");
                 return Ok(result);
             }
             catch (ArgumentException ex)

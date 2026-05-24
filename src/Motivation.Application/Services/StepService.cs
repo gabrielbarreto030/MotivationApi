@@ -109,6 +109,11 @@ namespace Motivation.Application.Services
             if (request.Tag != null)
                 filtered = filtered.Where(s => s.Tags.Any(t => string.Equals(t, request.Tag, StringComparison.OrdinalIgnoreCase)));
 
+            if (request.Search != null)
+                filtered = filtered.Where(s =>
+                    s.Title.Contains(request.Search, StringComparison.OrdinalIgnoreCase) ||
+                    (s.Notes != null && s.Notes.Contains(request.Search, StringComparison.OrdinalIgnoreCase)));
+
             IEnumerable<Step> sorted = request.SortBy switch
             {
                 "iscompleted" => request.SortOrder == "desc"
@@ -138,9 +143,9 @@ namespace Motivation.Application.Services
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} steps (page {Page}, pageSize {PageSize}, isCompleted: {IsCompleted}, priority: {Priority}, tag: {Tag}, sortBy: {SortBy}, sortOrder: {SortOrder}) for goal {GoalId} by user {UserId}",
+                "Listed {Count}/{Total} steps (page {Page}, pageSize {PageSize}, isCompleted: {IsCompleted}, priority: {Priority}, tag: {Tag}, search: {Search}, sortBy: {SortBy}, sortOrder: {SortOrder}) for goal {GoalId} by user {UserId}",
                 items.Length, totalCount, request.Page, request.PageSize,
-                request.IsCompleted?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.Tag ?? "all", request.SortBy, request.SortOrder, goalId, userId);
+                request.IsCompleted?.ToString() ?? "all", request.Priority?.ToString() ?? "all", request.Tag ?? "all", request.Search ?? "all", request.SortBy, request.SortOrder, goalId, userId);
 
             return new PagedResponse<CreateStepResponse>(items, totalCount, request.Page, request.PageSize);
         }
