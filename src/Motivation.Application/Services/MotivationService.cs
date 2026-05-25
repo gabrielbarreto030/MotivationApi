@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Motivation.Application.DTOs;
@@ -75,6 +77,40 @@ namespace Motivation.Application.Services
             _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId}", motivations.Length, goalId, userId);
 
             return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text));
+        }
+
+        public async Task<PagedResponse<AddMotivationResponse>> ListByGoalFilteredAsync(Guid goalId, Guid userId, MotivationFilterRequest filter)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view motivations of this goal");
+
+            var motivations = await _motivationRepository.GetByGoalAsync(goalId);
+
+            IEnumerable<Domain.Entities.Motivation> query = motivations;
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var term = filter.Search.ToLowerInvariant();
+                query = query.Where(m => m.Text.Contains(term, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var filtered = query.ToArray();
+            var total = filtered.Length;
+            var items = filtered
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .Select(m => new AddMotivationResponse(m.Id, m.GoalId, m.Text))
+                .ToArray();
+
+            _logger.LogInformation(
+                "Listed {Count}/{Total} motivations for goal {GoalId} by user {UserId} (search={Search})",
+                items.Length, total, goalId, userId, filter.Search);
+
+            return new PagedResponse<AddMotivationResponse>(items, total, filter.Page, filter.PageSize);
         }
 
         public async Task<AddMotivationResponse> UpdateAsync(Guid goalId, Guid motivationId, UpdateMotivationRequest request, Guid userId)

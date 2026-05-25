@@ -29,10 +29,13 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista todas as frases motivacionais de uma meta do usuário autenticado.
+        /// Lista as frases motivacionais de uma meta do usuário autenticado, com busca opcional por texto.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>
-        /// <returns>Array de motivações com id, goalId e texto.</returns>
+        /// <param name="search">Termo de busca parcial e case-insensitive no texto da motivação (opcional).</param>
+        /// <param name="page">Número da página (padrão: 1).</param>
+        /// <param name="pageSize">Itens por página (padrão: 10).</param>
+        /// <returns>Lista paginada de motivações correspondentes.</returns>
         /// <response code="200">Lista retornada com sucesso.</response>
         /// <response code="400">Meta não encontrada.</response>
         /// <response code="401">Token ausente ou inválido.</response>
@@ -42,15 +45,16 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> List(Guid goalId)
+        public async Task<IActionResult> List(Guid goalId, [FromQuery] string? search = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var result = await _motivationService.ListByGoalAsync(goalId, userId.Value);
-                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId}", result.Length, goalId, userId.Value);
+                var filter = new MotivationFilterRequest(page, pageSize, search);
+                var result = await _motivationService.ListByGoalFilteredAsync(goalId, userId.Value, filter);
+                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId} (search={Search})", result.TotalCount, goalId, userId.Value, search);
                 return Ok(result);
             }
             catch (ArgumentException ex)
