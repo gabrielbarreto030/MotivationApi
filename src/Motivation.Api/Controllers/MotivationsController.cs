@@ -29,10 +29,12 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista as frases motivacionais de uma meta do usuário autenticado, com busca opcional por texto.
+        /// Lista as frases motivacionais de uma meta do usuário autenticado, com busca e ordenação opcionais.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>
         /// <param name="search">Termo de busca parcial e case-insensitive no texto da motivação (opcional).</param>
+        /// <param name="sortBy">Campo de ordenação: "text" ou "createdAt" (padrão: createdAt).</param>
+        /// <param name="sortOrder">Direção de ordenação: "asc" ou "desc" (padrão: asc).</param>
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10).</param>
         /// <returns>Lista paginada de motivações correspondentes.</returns>
@@ -45,16 +47,16 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> List(Guid goalId, [FromQuery] string? search = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> List(Guid goalId, [FromQuery] string? search = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortOrder = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var filter = new MotivationFilterRequest(page, pageSize, search);
+                var filter = new MotivationFilterRequest(page, pageSize, search, sortBy, sortOrder);
                 var result = await _motivationService.ListByGoalFilteredAsync(goalId, userId.Value, filter);
-                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId} (search={Search})", result.TotalCount, goalId, userId.Value, search);
+                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId} (search={Search}, sortBy={SortBy}, sortOrder={SortOrder})", result.TotalCount, goalId, userId.Value, search, sortBy, sortOrder);
                 return Ok(result);
             }
             catch (ArgumentException ex)

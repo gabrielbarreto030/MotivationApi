@@ -34,12 +34,12 @@ namespace Motivation.Application.Services
             if (goal.UserId != userId)
                 throw new UnauthorizedAccessException("You don't have permission to add motivations to this goal");
 
-            var motivation = new Domain.Entities.Motivation(Guid.NewGuid(), goalId, request.Text);
+            var motivation = new Domain.Entities.Motivation(Guid.NewGuid(), goalId, request.Text, DateTime.UtcNow);
             await _motivationRepository.AddAsync(motivation);
 
             _logger.LogInformation("Motivation {MotivationId} added to goal {GoalId} by user {UserId}", motivation.Id, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt);
         }
 
         public async Task RemoveAsync(Guid goalId, Guid motivationId, Guid userId)
@@ -76,7 +76,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId}", motivations.Length, goalId, userId);
 
-            return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text));
+            return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt));
         }
 
         public async Task<PagedResponse<AddMotivationResponse>> ListByGoalFilteredAsync(Guid goalId, Guid userId, MotivationFilterRequest filter)
@@ -98,17 +98,25 @@ namespace Motivation.Application.Services
                 query = query.Where(m => m.Text.Contains(term, StringComparison.OrdinalIgnoreCase));
             }
 
+            query = (filter.SortBy, filter.SortOrder) switch
+            {
+                ("text", "desc") => query.OrderByDescending(m => m.Text),
+                ("text", _) => query.OrderBy(m => m.Text),
+                ("createdat", "desc") => query.OrderByDescending(m => m.CreatedAt),
+                _ => query.OrderBy(m => m.CreatedAt),
+            };
+
             var filtered = query.ToArray();
             var total = filtered.Length;
             var items = filtered
                 .Skip((filter.Page - 1) * filter.PageSize)
                 .Take(filter.PageSize)
-                .Select(m => new AddMotivationResponse(m.Id, m.GoalId, m.Text))
+                .Select(m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt))
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} motivations for goal {GoalId} by user {UserId} (search={Search})",
-                items.Length, total, goalId, userId, filter.Search);
+                "Listed {Count}/{Total} motivations for goal {GoalId} by user {UserId} (search={Search}, sortBy={SortBy}, sortOrder={SortOrder})",
+                items.Length, total, goalId, userId, filter.Search, filter.SortBy, filter.SortOrder);
 
             return new PagedResponse<AddMotivationResponse>(items, total, filter.Page, filter.PageSize);
         }
@@ -137,7 +145,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Motivation {MotivationId} updated on goal {GoalId} by user {UserId}", motivationId, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt);
         }
     }
 }

@@ -7,10 +7,11 @@ namespace Motivation.Domain.Entities
         public Guid Id { get; private set; }
         public Guid GoalId { get; private set; }
         public string Text { get; private set; }
+        public DateTime CreatedAt { get; private set; }
 
         protected Motivation() { }
 
-        public Motivation(Guid id, Guid goalId, string text)
+        public Motivation(Guid id, Guid goalId, string text, DateTime createdAt = default)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (goalId == Guid.Empty) throw new ArgumentException("GoalId cannot be empty", nameof(goalId));
@@ -19,6 +20,7 @@ namespace Motivation.Domain.Entities
             Id = id;
             GoalId = goalId;
             Text = text;
+            CreatedAt = createdAt == default ? DateTime.UtcNow : createdAt;
         }
 
         public void UpdateText(string newText)
