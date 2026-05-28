@@ -35,11 +35,13 @@ namespace Motivation.Application.Services
                 throw new UnauthorizedAccessException("You don't have permission to add motivations to this goal");
 
             var motivation = new Domain.Entities.Motivation(Guid.NewGuid(), goalId, request.Text, DateTime.UtcNow);
+            if (request.Tags != null)
+                motivation.SetTags(request.Tags);
             await _motivationRepository.AddAsync(motivation);
 
             _logger.LogInformation("Motivation {MotivationId} added to goal {GoalId} by user {UserId}", motivation.Id, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags);
         }
 
         public async Task RemoveAsync(Guid goalId, Guid motivationId, Guid userId)
@@ -76,7 +78,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId}", motivations.Length, goalId, userId);
 
-            return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt));
+            return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt, m.Tags));
         }
 
         public async Task<PagedResponse<AddMotivationResponse>> ListByGoalFilteredAsync(Guid goalId, Guid userId, MotivationFilterRequest filter)
@@ -98,6 +100,12 @@ namespace Motivation.Application.Services
                 query = query.Where(m => m.Text.Contains(term, StringComparison.OrdinalIgnoreCase));
             }
 
+            if (!string.IsNullOrWhiteSpace(filter.Tag))
+            {
+                var tagLower = filter.Tag.ToLowerInvariant();
+                query = query.Where(m => m.Tags.Any(t => t.Equals(tagLower, StringComparison.OrdinalIgnoreCase)));
+            }
+
             query = (filter.SortBy, filter.SortOrder) switch
             {
                 ("text", "desc") => query.OrderByDescending(m => m.Text),
@@ -111,12 +119,12 @@ namespace Motivation.Application.Services
             var items = filtered
                 .Skip((filter.Page - 1) * filter.PageSize)
                 .Take(filter.PageSize)
-                .Select(m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt))
+                .Select(m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt, m.Tags))
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} motivations for goal {GoalId} by user {UserId} (search={Search}, sortBy={SortBy}, sortOrder={SortOrder})",
-                items.Length, total, goalId, userId, filter.Search, filter.SortBy, filter.SortOrder);
+                "Listed {Count}/{Total} motivations for goal {GoalId} by user {UserId} (search={Search}, sortBy={SortBy}, sortOrder={SortOrder}, tag={Tag})",
+                items.Length, total, goalId, userId, filter.Search, filter.SortBy, filter.SortOrder, filter.Tag);
 
             return new PagedResponse<AddMotivationResponse>(items, total, filter.Page, filter.PageSize);
         }
@@ -141,11 +149,15 @@ namespace Motivation.Application.Services
                 throw new ArgumentException("Motivation does not belong to this goal", nameof(motivationId));
 
             motivation.UpdateText(request.Text);
+            if (request.ClearTags)
+                motivation.SetTags(null);
+            else if (request.Tags != null)
+                motivation.SetTags(request.Tags);
             await _motivationRepository.UpdateAsync(motivation);
 
             _logger.LogInformation("Motivation {MotivationId} updated on goal {GoalId} by user {UserId}", motivationId, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags);
         }
     }
 }
