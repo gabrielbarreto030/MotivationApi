@@ -16,12 +16,14 @@ namespace Motivation.Api.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IJwtService _jwtService;
+        private readonly IUserStatsService _userStatsService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
+            _userStatsService = userStatsService;
             _logger = logger;
         }
 
@@ -121,6 +123,19 @@ namespace Motivation.Api.Controllers
             {
                 return BadRequest(new { error = ex.Message });
             }
+        }
+
+        [Authorize]
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var stats = await _userStatsService.GetStatsAsync(userId);
+            _logger.LogInformation("Stats retrieved for user {UserId}", userId);
+            return Ok(stats);
         }
 
         [Authorize]

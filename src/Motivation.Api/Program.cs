@@ -52,6 +52,7 @@ builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IStepService, StepService>();
 builder.Services.AddScoped<IMotivationService, MotivationService>();
 builder.Services.AddScoped<IDailyMessageService, DailyMessageService>();
+builder.Services.AddScoped<IUserStatsService, UserStatsService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // JWT authentication
