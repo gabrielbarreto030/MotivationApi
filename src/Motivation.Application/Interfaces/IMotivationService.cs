@@ -13,5 +13,7 @@ namespace Motivation.Application.Interfaces
         Task<AddMotivationResponse> UpdateAsync(Guid goalId, Guid motivationId, UpdateMotivationRequest request, Guid userId);
         Task<AddMotivationResponse> FavoriteAsync(Guid goalId, Guid motivationId, Guid userId);
         Task<AddMotivationResponse> UnfavoriteAsync(Guid goalId, Guid motivationId, Guid userId);
+        Task<AddMotivationResponse> RateAsync(Guid goalId, Guid motivationId, RateMotivationRequest request, Guid userId);
+        Task<AddMotivationResponse> ClearRatingAsync(Guid goalId, Guid motivationId, Guid userId);
     }
 }

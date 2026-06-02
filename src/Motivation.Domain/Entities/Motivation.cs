@@ -12,6 +12,7 @@ namespace Motivation.Domain.Entities
         public DateTime CreatedAt { get; private set; }
         public string TagsRaw { get; private set; } = string.Empty;
         public bool IsFavorite { get; private set; }
+        public int? Rating { get; private set; }
 
         public IReadOnlyList<string> Tags =>
             string.IsNullOrWhiteSpace(TagsRaw)
@@ -20,11 +21,13 @@ namespace Motivation.Domain.Entities
 
         protected Motivation() { }
 
-        public Motivation(Guid id, Guid goalId, string text, DateTime createdAt = default, string? tagsRaw = null, bool isFavorite = false)
+        public Motivation(Guid id, Guid goalId, string text, DateTime createdAt = default, string? tagsRaw = null, bool isFavorite = false, int? rating = null)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (goalId == Guid.Empty) throw new ArgumentException("GoalId cannot be empty", nameof(goalId));
             if (string.IsNullOrWhiteSpace(text)) throw new ArgumentException("Text is required", nameof(text));
+            if (rating.HasValue && (rating.Value < 1 || rating.Value > 5))
+                throw new ArgumentOutOfRangeException(nameof(rating), "Rating must be between 1 and 5");
 
             Id = id;
             GoalId = goalId;
@@ -32,6 +35,7 @@ namespace Motivation.Domain.Entities
             CreatedAt = createdAt == default ? DateTime.UtcNow : createdAt;
             TagsRaw = tagsRaw ?? string.Empty;
             IsFavorite = isFavorite;
+            Rating = rating;
         }
 
         public void UpdateText(string newText)
@@ -60,6 +64,18 @@ namespace Motivation.Domain.Entities
         {
             if (!IsFavorite) throw new InvalidOperationException("Motivation is not a favorite");
             IsFavorite = false;
+        }
+
+        public void Rate(int rating)
+        {
+            if (rating < 1 || rating > 5)
+                throw new ArgumentOutOfRangeException(nameof(rating), "Rating must be between 1 and 5");
+            Rating = rating;
+        }
+
+        public void ClearRating()
+        {
+            Rating = null;
         }
     }
 }

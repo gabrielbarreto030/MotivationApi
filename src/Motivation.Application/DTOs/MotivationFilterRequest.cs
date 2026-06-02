@@ -7,8 +7,9 @@ namespace Motivation.Application.DTOs
         public string SortOrder { get; init; }
         public string? Tag { get; init; }
         public bool? OnlyFavorites { get; init; }
+        public int? MinRating { get; init; }
 
-        public MotivationFilterRequest(int page = 1, int pageSize = 10, string? search = null, string? sortBy = null, string? sortOrder = null, string? tag = null, bool? onlyFavorites = null)
+        public MotivationFilterRequest(int page = 1, int pageSize = 10, string? search = null, string? sortBy = null, string? sortOrder = null, string? tag = null, bool? onlyFavorites = null, int? minRating = null)
             : base(page, pageSize)
         {
             Search = string.IsNullOrWhiteSpace(search) ? null : search.Trim();
@@ -16,6 +17,7 @@ namespace Motivation.Application.DTOs
             SortOrder = sortOrder?.ToLowerInvariant() == "desc" ? "desc" : "asc";
             Tag = string.IsNullOrWhiteSpace(tag) ? null : tag.Trim();
             OnlyFavorites = onlyFavorites;
+            MinRating = minRating;
         }
     }
 }

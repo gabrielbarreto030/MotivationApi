@@ -41,7 +41,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Motivation {MotivationId} added to goal {GoalId} by user {UserId}", motivation.Id, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite, motivation.Rating);
         }
 
         public async Task RemoveAsync(Guid goalId, Guid motivationId, Guid userId)
@@ -78,7 +78,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId}", motivations.Length, goalId, userId);
 
-            return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt, m.Tags, m.IsFavorite));
+            return System.Array.ConvertAll(motivations, m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt, m.Tags, m.IsFavorite, m.Rating));
         }
 
         public async Task<PagedResponse<AddMotivationResponse>> ListByGoalFilteredAsync(Guid goalId, Guid userId, MotivationFilterRequest filter)
@@ -109,6 +109,9 @@ namespace Motivation.Application.Services
             if (filter.OnlyFavorites == true)
                 query = query.Where(m => m.IsFavorite);
 
+            if (filter.MinRating.HasValue)
+                query = query.Where(m => m.Rating.HasValue && m.Rating.Value >= filter.MinRating.Value);
+
             query = (filter.SortBy, filter.SortOrder) switch
             {
                 ("text", "desc") => query.OrderByDescending(m => m.Text),
@@ -122,12 +125,12 @@ namespace Motivation.Application.Services
             var items = filtered
                 .Skip((filter.Page - 1) * filter.PageSize)
                 .Take(filter.PageSize)
-                .Select(m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt, m.Tags, m.IsFavorite))
+                .Select(m => new AddMotivationResponse(m.Id, m.GoalId, m.Text, m.CreatedAt, m.Tags, m.IsFavorite, m.Rating))
                 .ToArray();
 
             _logger.LogInformation(
-                "Listed {Count}/{Total} motivations for goal {GoalId} by user {UserId} (search={Search}, sortBy={SortBy}, sortOrder={SortOrder}, tag={Tag}, onlyFavorites={OnlyFavorites})",
-                items.Length, total, goalId, userId, filter.Search, filter.SortBy, filter.SortOrder, filter.Tag, filter.OnlyFavorites);
+                "Listed {Count}/{Total} motivations for goal {GoalId} by user {UserId} (search={Search}, sortBy={SortBy}, sortOrder={SortOrder}, tag={Tag}, onlyFavorites={OnlyFavorites}, minRating={MinRating})",
+                items.Length, total, goalId, userId, filter.Search, filter.SortBy, filter.SortOrder, filter.Tag, filter.OnlyFavorites, filter.MinRating);
 
             return new PagedResponse<AddMotivationResponse>(items, total, filter.Page, filter.PageSize);
         }
@@ -160,7 +163,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Motivation {MotivationId} updated on goal {GoalId} by user {UserId}", motivationId, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite, motivation.Rating);
         }
 
         public async Task<AddMotivationResponse> FavoriteAsync(Guid goalId, Guid motivationId, Guid userId)
@@ -184,7 +187,7 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Motivation {MotivationId} marked as favorite on goal {GoalId} by user {UserId}", motivationId, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite, motivation.Rating);
         }
 
         public async Task<AddMotivationResponse> UnfavoriteAsync(Guid goalId, Guid motivationId, Guid userId)
@@ -208,7 +211,55 @@ namespace Motivation.Application.Services
 
             _logger.LogInformation("Motivation {MotivationId} removed from favorites on goal {GoalId} by user {UserId}", motivationId, goalId, userId);
 
-            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite);
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite, motivation.Rating);
+        }
+
+        public async Task<AddMotivationResponse> RateAsync(Guid goalId, Guid motivationId, RateMotivationRequest request, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to rate motivations of this goal");
+
+            var motivation = await _motivationRepository.GetByIdAsync(motivationId);
+            if (motivation == null)
+                throw new ArgumentException("Motivation not found", nameof(motivationId));
+
+            if (motivation.GoalId != goalId)
+                throw new ArgumentException("Motivation does not belong to this goal", nameof(motivationId));
+
+            motivation.Rate(request.Rating);
+            await _motivationRepository.UpdateAsync(motivation);
+
+            _logger.LogInformation("Motivation {MotivationId} rated {Rating} on goal {GoalId} by user {UserId}", motivationId, request.Rating, goalId, userId);
+
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite, motivation.Rating);
+        }
+
+        public async Task<AddMotivationResponse> ClearRatingAsync(Guid goalId, Guid motivationId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to clear rating of motivations of this goal");
+
+            var motivation = await _motivationRepository.GetByIdAsync(motivationId);
+            if (motivation == null)
+                throw new ArgumentException("Motivation not found", nameof(motivationId));
+
+            if (motivation.GoalId != goalId)
+                throw new ArgumentException("Motivation does not belong to this goal", nameof(motivationId));
+
+            motivation.ClearRating();
+            await _motivationRepository.UpdateAsync(motivation);
+
+            _logger.LogInformation("Motivation {MotivationId} rating cleared on goal {GoalId} by user {UserId}", motivationId, goalId, userId);
+
+            return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite, motivation.Rating);
         }
     }
 }

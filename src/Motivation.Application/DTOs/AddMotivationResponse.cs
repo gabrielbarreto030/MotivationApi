@@ -3,5 +3,5 @@ using System.Collections.Generic;
 
 namespace Motivation.Application.DTOs
 {
-    public record AddMotivationResponse(Guid Id, Guid GoalId, string Text, DateTime CreatedAt, IReadOnlyList<string> Tags, bool IsFavorite = false);
+    public record AddMotivationResponse(Guid Id, Guid GoalId, string Text, DateTime CreatedAt, IReadOnlyList<string> Tags, bool IsFavorite = false, int? Rating = null);
 }

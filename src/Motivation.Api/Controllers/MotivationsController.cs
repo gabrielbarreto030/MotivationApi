@@ -37,6 +37,7 @@ namespace Motivation.Api.Controllers
         /// <param name="sortBy">Campo de ordenação: "text" ou "createdAt" (padrão: createdAt).</param>
         /// <param name="sortOrder">Direção de ordenação: "asc" ou "desc" (padrão: asc).</param>
         /// <param name="onlyFavorites">Se true, retorna apenas motivações marcadas como favoritas (opcional).</param>
+        /// <param name="minRating">Filtra motivações com rating maior ou igual ao valor informado (1-5, opcional).</param>
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10).</param>
         /// <returns>Lista paginada de motivações correspondentes.</returns>
@@ -49,16 +50,16 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> List(Guid goalId, [FromQuery] string? search = null, [FromQuery] string? tag = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortOrder = null, [FromQuery] bool? onlyFavorites = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> List(Guid goalId, [FromQuery] string? search = null, [FromQuery] string? tag = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortOrder = null, [FromQuery] bool? onlyFavorites = null, [FromQuery] int? minRating = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var filter = new MotivationFilterRequest(page, pageSize, search, sortBy, sortOrder, tag, onlyFavorites);
+                var filter = new MotivationFilterRequest(page, pageSize, search, sortBy, sortOrder, tag, onlyFavorites, minRating);
                 var result = await _motivationService.ListByGoalFilteredAsync(goalId, userId.Value, filter);
-                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId} (search={Search}, tag={Tag}, sortBy={SortBy}, sortOrder={SortOrder}, onlyFavorites={OnlyFavorites})", result.TotalCount, goalId, userId.Value, search, tag, sortBy, sortOrder, onlyFavorites);
+                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId} (search={Search}, tag={Tag}, sortBy={SortBy}, sortOrder={SortOrder}, onlyFavorites={OnlyFavorites}, minRating={MinRating})", result.TotalCount, goalId, userId.Value, search, tag, sortBy, sortOrder, onlyFavorites, minRating);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -159,6 +160,88 @@ namespace Motivation.Api.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning("Unauthorized unfavorite attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
+        /// Atribui um rating (1-5) a uma frase motivacional.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="motivationId">Id da motivação a avaliar.</param>
+        /// <param name="dto">Rating de 1 a 5.</param>
+        /// <returns>Motivação atualizada com o rating informado.</returns>
+        /// <response code="200">Rating atribuído com sucesso.</response>
+        /// <response code="400">Dados inválidos, meta ou motivação inexistente.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        [HttpPut("{motivationId}/rating")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> Rate(Guid goalId, Guid motivationId, [FromBody] RateMotivationRequest dto)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _motivationService.RateAsync(goalId, motivationId, dto, userId.Value);
+                _logger.LogInformation("Motivation {MotivationId} rated {Rating} on goal {GoalId} by user {UserId}", motivationId, dto.Rating, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                _logger.LogWarning("Bad request rating motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request rating motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized rating attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
+        /// Remove o rating de uma frase motivacional.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="motivationId">Id da motivação a ter o rating removido.</param>
+        /// <returns>Motivação atualizada com Rating=null.</returns>
+        /// <response code="200">Rating removido com sucesso.</response>
+        /// <response code="400">Motivação não encontrada ou não pertence à meta.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        [HttpDelete("{motivationId}/rating")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> ClearRating(Guid goalId, Guid motivationId)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _motivationService.ClearRatingAsync(goalId, motivationId, userId.Value);
+                _logger.LogInformation("Motivation {MotivationId} rating cleared on goal {GoalId} by user {UserId}", motivationId, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request clearing rating of motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized clear rating attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
                 return Forbid();
             }
         }
