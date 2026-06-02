@@ -29,13 +29,14 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
-        /// Lista as frases motivacionais de uma meta do usuário autenticado, com busca, filtragem por tag e ordenação opcionais.
+        /// Lista as frases motivacionais de uma meta do usuário autenticado, com busca, filtragem por tag/favoritos e ordenação opcionais.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>
         /// <param name="search">Termo de busca parcial e case-insensitive no texto da motivação (opcional).</param>
         /// <param name="tag">Filtra motivações que possuam exatamente esta tag (case-insensitive, opcional).</param>
         /// <param name="sortBy">Campo de ordenação: "text" ou "createdAt" (padrão: createdAt).</param>
         /// <param name="sortOrder">Direção de ordenação: "asc" ou "desc" (padrão: asc).</param>
+        /// <param name="onlyFavorites">Se true, retorna apenas motivações marcadas como favoritas (opcional).</param>
         /// <param name="page">Número da página (padrão: 1).</param>
         /// <param name="pageSize">Itens por página (padrão: 10).</param>
         /// <returns>Lista paginada de motivações correspondentes.</returns>
@@ -48,16 +49,16 @@ namespace Motivation.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> List(Guid goalId, [FromQuery] string? search = null, [FromQuery] string? tag = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortOrder = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> List(Guid goalId, [FromQuery] string? search = null, [FromQuery] string? tag = null, [FromQuery] string? sortBy = null, [FromQuery] string? sortOrder = null, [FromQuery] bool? onlyFavorites = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var userId = _currentUserService.GetUserId();
             if (userId == null) return Unauthorized();
 
             try
             {
-                var filter = new MotivationFilterRequest(page, pageSize, search, sortBy, sortOrder, tag);
+                var filter = new MotivationFilterRequest(page, pageSize, search, sortBy, sortOrder, tag, onlyFavorites);
                 var result = await _motivationService.ListByGoalFilteredAsync(goalId, userId.Value, filter);
-                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId} (search={Search}, tag={Tag}, sortBy={SortBy}, sortOrder={SortOrder})", result.TotalCount, goalId, userId.Value, search, tag, sortBy, sortOrder);
+                _logger.LogInformation("Listed {Count} motivations for goal {GoalId} by user {UserId} (search={Search}, tag={Tag}, sortBy={SortBy}, sortOrder={SortOrder}, onlyFavorites={OnlyFavorites})", result.TotalCount, goalId, userId.Value, search, tag, sortBy, sortOrder, onlyFavorites);
                 return Ok(result);
             }
             catch (ArgumentException ex)
@@ -68,6 +69,96 @@ namespace Motivation.Api.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 _logger.LogWarning("Unauthorized motivation list attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
+        /// Marca uma frase motivacional como favorita.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="motivationId">Id da motivação a favoritar.</param>
+        /// <returns>Motivação atualizada com IsFavorite=true.</returns>
+        /// <response code="200">Motivação favoritada com sucesso.</response>
+        /// <response code="400">Motivação não encontrada ou não pertence à meta.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        /// <response code="409">Motivação já é favorita.</response>
+        [HttpPost("{motivationId}/favorite")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Favorite(Guid goalId, Guid motivationId)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _motivationService.FavoriteAsync(goalId, motivationId, userId.Value);
+                _logger.LogInformation("Motivation {MotivationId} marked as favorite on goal {GoalId} by user {UserId}", motivationId, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Conflict favoriting motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return Conflict(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request favoriting motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized favorite attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
+        /// Remove uma frase motivacional dos favoritos.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <param name="motivationId">Id da motivação a desfavoritar.</param>
+        /// <returns>Motivação atualizada com IsFavorite=false.</returns>
+        /// <response code="200">Motivação removida dos favoritos com sucesso.</response>
+        /// <response code="400">Motivação não encontrada ou não pertence à meta.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        /// <response code="409">Motivação não é favorita.</response>
+        [HttpDelete("{motivationId}/favorite")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Unfavorite(Guid goalId, Guid motivationId)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _motivationService.UnfavoriteAsync(goalId, motivationId, userId.Value);
+                _logger.LogInformation("Motivation {MotivationId} removed from favorites on goal {GoalId} by user {UserId}", motivationId, goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Conflict unfavoriting motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return Conflict(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request unfavoriting motivation {MotivationId} on goal {GoalId}: {Message}", motivationId, goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized unfavorite attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
                 return Forbid();
             }
         }

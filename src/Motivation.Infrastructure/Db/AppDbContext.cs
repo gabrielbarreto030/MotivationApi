@@ -45,6 +45,7 @@ namespace Motivation.Infrastructure.Db
                 b.Property(m => m.Text).IsRequired();
                 b.Property(m => m.CreatedAt).IsRequired();
                 b.Property(m => m.TagsRaw);
+                b.Property(m => m.IsFavorite);
             });
         }
     }

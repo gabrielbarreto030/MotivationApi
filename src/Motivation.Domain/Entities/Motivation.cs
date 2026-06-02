@@ -11,6 +11,7 @@ namespace Motivation.Domain.Entities
         public string Text { get; private set; }
         public DateTime CreatedAt { get; private set; }
         public string TagsRaw { get; private set; } = string.Empty;
+        public bool IsFavorite { get; private set; }
 
         public IReadOnlyList<string> Tags =>
             string.IsNullOrWhiteSpace(TagsRaw)
@@ -19,7 +20,7 @@ namespace Motivation.Domain.Entities
 
         protected Motivation() { }
 
-        public Motivation(Guid id, Guid goalId, string text, DateTime createdAt = default, string? tagsRaw = null)
+        public Motivation(Guid id, Guid goalId, string text, DateTime createdAt = default, string? tagsRaw = null, bool isFavorite = false)
         {
             if (id == Guid.Empty) throw new ArgumentException("Id cannot be empty", nameof(id));
             if (goalId == Guid.Empty) throw new ArgumentException("GoalId cannot be empty", nameof(goalId));
@@ -30,6 +31,7 @@ namespace Motivation.Domain.Entities
             Text = text;
             CreatedAt = createdAt == default ? DateTime.UtcNow : createdAt;
             TagsRaw = tagsRaw ?? string.Empty;
+            IsFavorite = isFavorite;
         }
 
         public void UpdateText(string newText)
@@ -46,6 +48,18 @@ namespace Motivation.Domain.Entities
                 return;
             }
             TagsRaw = string.Join(',', tags.Select(t => t.Trim()).Where(t => !string.IsNullOrWhiteSpace(t)));
+        }
+
+        public void Favorite()
+        {
+            if (IsFavorite) throw new InvalidOperationException("Motivation is already a favorite");
+            IsFavorite = true;
+        }
+
+        public void Unfavorite()
+        {
+            if (!IsFavorite) throw new InvalidOperationException("Motivation is not a favorite");
+            IsFavorite = false;
         }
     }
 }
