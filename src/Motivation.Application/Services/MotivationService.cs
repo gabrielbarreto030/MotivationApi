@@ -238,6 +238,35 @@ namespace Motivation.Application.Services
             return new AddMotivationResponse(motivation.Id, motivation.GoalId, motivation.Text, motivation.CreatedAt, motivation.Tags, motivation.IsFavorite, motivation.Rating);
         }
 
+        public async Task<MotivationStatsResponse> GetStatsAsync(Guid goalId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view stats of this goal");
+
+            var motivations = await _motivationRepository.GetByGoalAsync(goalId);
+
+            var totalMotivations = motivations.Length;
+            var totalFavorites = motivations.Count(m => m.IsFavorite);
+            var rated = motivations.Where(m => m.Rating.HasValue).ToArray();
+            var ratedMotivations = rated.Length;
+            var averageRating = ratedMotivations > 0 ? (double?)rated.Average(m => m.Rating!.Value) : null;
+
+            var tagBreakdown = motivations
+                .SelectMany(m => m.Tags)
+                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            _logger.LogInformation(
+                "Stats for goal {GoalId} by user {UserId}: total={Total}, favorites={Favorites}, rated={Rated}, avgRating={AvgRating}",
+                goalId, userId, totalMotivations, totalFavorites, ratedMotivations, averageRating);
+
+            return new MotivationStatsResponse(totalMotivations, totalFavorites, ratedMotivations, averageRating, tagBreakdown);
+        }
+
         public async Task<AddMotivationResponse> ClearRatingAsync(Guid goalId, Guid motivationId, Guid userId)
         {
             var goal = await _goalRepository.GetByIdAsync(goalId);

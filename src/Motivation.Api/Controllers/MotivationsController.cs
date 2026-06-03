@@ -29,6 +29,43 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Retorna estatísticas agregadas das frases motivacionais de uma meta do usuário autenticado.
+        /// </summary>
+        /// <param name="goalId">Id da meta.</param>
+        /// <returns>Estatísticas: total, favoritas, avaliadas, média de rating e breakdown por tag.</returns>
+        /// <response code="200">Estatísticas retornadas com sucesso.</response>
+        /// <response code="400">Meta não encontrada.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="403">Meta pertence a outro usuário.</response>
+        [HttpGet("stats")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetStats(Guid goalId)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            try
+            {
+                var result = await _motivationService.GetStatsAsync(goalId, userId.Value);
+                _logger.LogInformation("Stats retrieved for goal {GoalId} by user {UserId}", goalId, userId.Value);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning("Bad request getting stats for goal {GoalId}: {Message}", goalId, ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized stats attempt on goal {GoalId} by user {UserId}: {Message}", goalId, userId.Value, ex.Message);
+                return Forbid();
+            }
+        }
+
+        /// <summary>
         /// Lista as frases motivacionais de uma meta do usuário autenticado, com busca, filtragem por tag/favoritos e ordenação opcionais.
         /// </summary>
         /// <param name="goalId">Id da meta.</param>
