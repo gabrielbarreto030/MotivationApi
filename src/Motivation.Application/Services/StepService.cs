@@ -293,5 +293,39 @@ namespace Motivation.Application.Services
 
             return overdue.Select(s => new CreateStepResponse(s.Id, s.GoalId, s.Title, s.IsCompleted, s.CompletedAt, s.Notes, s.DueDate, true, s.Priority, s.Order, s.Tags)).ToArray();
         }
+
+        public async Task<StepStatsResponse> GetStatsAsync(Guid goalId, Guid userId)
+        {
+            var goal = await _goalRepository.GetByIdAsync(goalId);
+            if (goal == null)
+                throw new ArgumentException("Goal not found", nameof(goalId));
+
+            if (goal.UserId != userId)
+                throw new UnauthorizedAccessException("You don't have permission to view stats of this goal");
+
+            var steps = await _stepRepository.GetByGoalAsync(goalId);
+            var now = DateTime.UtcNow;
+
+            var total = steps.Length;
+            var completed = steps.Count(s => s.IsCompleted);
+            var pending = total - completed;
+            var overdue = steps.Count(s => s.IsOverdue(now));
+            var completionPercentage = total > 0 ? Math.Round((double)completed / total * 100, 2) : 0.0;
+
+            var priorityBreakdown = steps
+                .GroupBy(s => s.Priority.ToString())
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var tagBreakdown = steps
+                .SelectMany(s => s.Tags)
+                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            _logger.LogInformation(
+                "Stats for goal {GoalId} by user {UserId}: total={Total}, completed={Completed}, pending={Pending}, overdue={Overdue}, completion={Completion}%",
+                goalId, userId, total, completed, pending, overdue, completionPercentage);
+
+            return new StepStatsResponse(total, completed, pending, overdue, completionPercentage, priorityBreakdown, tagBreakdown);
+        }
     }
 }

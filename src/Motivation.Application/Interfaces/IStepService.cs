@@ -15,5 +15,6 @@ namespace Motivation.Application.Interfaces
         Task<CreateStepResponse> UpdateAsync(Guid goalId, Guid stepId, UpdateStepRequest request, Guid userId);
         Task<CreateStepResponse[]> GetOverdueByGoalAsync(Guid goalId, Guid userId);
         Task<CreateStepResponse> ReorderAsync(Guid goalId, Guid stepId, ReorderStepRequest request, Guid userId);
+        Task<StepStatsResponse> GetStatsAsync(Guid goalId, Guid userId);
     }
 }
