@@ -30,6 +30,25 @@ namespace Motivation.Api.Controllers
         }
 
         /// <summary>
+        /// Retorna estatísticas agregadas de todas as metas do usuário autenticado.
+        /// </summary>
+        /// <returns>Total, breakdown por status e prioridade, arquivadas, pinadas, vencidas, breakdown de tags e média de dias para conclusão.</returns>
+        /// <response code="200">Estatísticas retornadas com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        [HttpGet("stats")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetStats()
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalService.GetStatsAsync(userId.Value);
+            _logger.LogInformation("Goal stats retrieved for user {UserId}", userId.Value);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Retorna um resumo estatístico das metas e passos do usuário autenticado.
         /// </summary>
         /// <returns>Totais de metas por status, passos totais/concluídos e taxa de conclusão geral.</returns>

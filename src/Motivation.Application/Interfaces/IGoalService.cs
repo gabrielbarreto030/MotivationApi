@@ -21,5 +21,6 @@ namespace Motivation.Application.Interfaces
         Task<CreateGoalResponse> PinAsync(Guid id, Guid userId);
         Task<CreateGoalResponse> UnpinAsync(Guid id, Guid userId);
         Task<CreateGoalResponse[]> GetPinnedAsync(Guid userId);
+        Task<GoalStatsResponse> GetStatsAsync(Guid userId);
     }
 }

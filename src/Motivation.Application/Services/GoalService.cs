@@ -325,6 +325,41 @@ namespace Motivation.Application.Services
             return pinned.Select(g => ToCreateResponse(g, now)).ToArray();
         }
 
+        public async Task<GoalStatsResponse> GetStatsAsync(Guid userId)
+        {
+            var now = DateTime.UtcNow;
+            var goals = await _goalRepository.GetByUserAsync(userId);
+
+            var total = goals.Length;
+            var archived = goals.Count(g => g.IsArchived);
+            var pinned = goals.Count(g => g.IsPinned);
+            var overdue = goals.Count(g => g.IsOverdue(now));
+
+            var byStatus = goals
+                .GroupBy(g => g.Status.ToString())
+                .ToDictionary(grp => grp.Key, grp => grp.Count());
+
+            var byPriority = goals
+                .GroupBy(g => g.Priority.ToString())
+                .ToDictionary(grp => grp.Key, grp => grp.Count());
+
+            var tagBreakdown = goals
+                .SelectMany(g => g.Tags)
+                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(grp => grp.Key, grp => grp.Count());
+
+            var completed = goals.Where(g => g.CompletedAt.HasValue).ToArray();
+            double? avgCompletionDays = completed.Length > 0
+                ? Math.Round(completed.Average(g => (g.CompletedAt!.Value - g.CreatedAt).TotalDays), 2)
+                : null;
+
+            _logger.LogInformation(
+                "Stats for user {UserId}: total={Total}, archived={Archived}, pinned={Pinned}, overdue={Overdue}, avgCompletionDays={AvgDays}",
+                userId, total, archived, pinned, overdue, avgCompletionDays?.ToString() ?? "n/a");
+
+            return new GoalStatsResponse(total, byStatus, byPriority, archived, pinned, overdue, tagBreakdown, avgCompletionDays);
+        }
+
         public async Task<CreateGoalResponse> CloneAsync(Guid id, Guid userId)
         {
             var original = await _goalRepository.GetByIdAsync(id);
