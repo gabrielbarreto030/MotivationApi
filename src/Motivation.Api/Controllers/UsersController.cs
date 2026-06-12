@@ -17,13 +17,15 @@ namespace Motivation.Api.Controllers
         private readonly IAuthService _authService;
         private readonly IJwtService _jwtService;
         private readonly IUserStatsService _userStatsService;
+        private readonly IStreakService _streakService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
             _userStatsService = userStatsService;
+            _streakService = streakService;
             _logger = logger;
         }
 
@@ -136,6 +138,20 @@ namespace Motivation.Api.Controllers
             var stats = await _userStatsService.GetStatsAsync(userId);
             _logger.LogInformation("Stats retrieved for user {UserId}", userId);
             return Ok(stats);
+        }
+
+        [Authorize]
+        [HttpGet("streak")]
+        public async Task<IActionResult> GetStreak()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var result = await _streakService.GetStreakAsync(userId);
+            _logger.LogInformation("Streak retrieved for user {UserId}: current={Current}, longest={Longest}",
+                userId, result.CurrentStreak, result.LongestStreak);
+            return Ok(result);
         }
 
         [Authorize]
