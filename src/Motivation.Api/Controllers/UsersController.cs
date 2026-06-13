@@ -18,14 +18,16 @@ namespace Motivation.Api.Controllers
         private readonly IJwtService _jwtService;
         private readonly IUserStatsService _userStatsService;
         private readonly IStreakService _streakService;
+        private readonly IWeeklyReportService _weeklyReportService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
             _userStatsService = userStatsService;
             _streakService = streakService;
+            _weeklyReportService = weeklyReportService;
             _logger = logger;
         }
 
@@ -151,6 +153,21 @@ namespace Motivation.Api.Controllers
             var result = await _streakService.GetStreakAsync(userId);
             _logger.LogInformation("Streak retrieved for user {UserId}: current={Current}, longest={Longest}",
                 userId, result.CurrentStreak, result.LongestStreak);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("weekly-report")]
+        public async Task<IActionResult> GetWeeklyReport()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var result = await _weeklyReportService.GetWeeklyReportAsync(userId);
+            _logger.LogInformation(
+                "Weekly report retrieved for user {UserId}: {TotalSteps} steps, {GoalsProgressed} goals progressed",
+                userId, result.TotalStepsCompleted, result.TotalGoalsProgressed);
             return Ok(result);
         }
 
