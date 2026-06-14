@@ -19,15 +19,17 @@ namespace Motivation.Api.Controllers
         private readonly IUserStatsService _userStatsService;
         private readonly IStreakService _streakService;
         private readonly IWeeklyReportService _weeklyReportService;
+        private readonly IMonthlyReportService _monthlyReportService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
             _userStatsService = userStatsService;
             _streakService = streakService;
             _weeklyReportService = weeklyReportService;
+            _monthlyReportService = monthlyReportService;
             _logger = logger;
         }
 
@@ -167,6 +169,21 @@ namespace Motivation.Api.Controllers
             var result = await _weeklyReportService.GetWeeklyReportAsync(userId);
             _logger.LogInformation(
                 "Weekly report retrieved for user {UserId}: {TotalSteps} steps, {GoalsProgressed} goals progressed",
+                userId, result.TotalStepsCompleted, result.TotalGoalsProgressed);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("monthly-report")]
+        public async Task<IActionResult> GetMonthlyReport()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var result = await _monthlyReportService.GetMonthlyReportAsync(userId);
+            _logger.LogInformation(
+                "Monthly report retrieved for user {UserId}: {TotalSteps} steps, {GoalsProgressed} goals progressed",
                 userId, result.TotalStepsCompleted, result.TotalGoalsProgressed);
             return Ok(result);
         }
