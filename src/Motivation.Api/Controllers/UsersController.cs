@@ -20,9 +20,10 @@ namespace Motivation.Api.Controllers
         private readonly IStreakService _streakService;
         private readonly IWeeklyReportService _weeklyReportService;
         private readonly IMonthlyReportService _monthlyReportService;
+        private readonly IYearlyReportService _yearlyReportService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
@@ -30,6 +31,7 @@ namespace Motivation.Api.Controllers
             _streakService = streakService;
             _weeklyReportService = weeklyReportService;
             _monthlyReportService = monthlyReportService;
+            _yearlyReportService = yearlyReportService;
             _logger = logger;
         }
 
@@ -184,6 +186,21 @@ namespace Motivation.Api.Controllers
             var result = await _monthlyReportService.GetMonthlyReportAsync(userId);
             _logger.LogInformation(
                 "Monthly report retrieved for user {UserId}: {TotalSteps} steps, {GoalsProgressed} goals progressed",
+                userId, result.TotalStepsCompleted, result.TotalGoalsProgressed);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("yearly-report")]
+        public async Task<IActionResult> GetYearlyReport()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var result = await _yearlyReportService.GetYearlyReportAsync(userId);
+            _logger.LogInformation(
+                "Yearly report retrieved for user {UserId}: {TotalSteps} steps, {GoalsProgressed} goals progressed",
                 userId, result.TotalStepsCompleted, result.TotalGoalsProgressed);
             return Ok(result);
         }
