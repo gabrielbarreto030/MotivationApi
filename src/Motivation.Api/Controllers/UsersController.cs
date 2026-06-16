@@ -21,9 +21,10 @@ namespace Motivation.Api.Controllers
         private readonly IWeeklyReportService _weeklyReportService;
         private readonly IMonthlyReportService _monthlyReportService;
         private readonly IYearlyReportService _yearlyReportService;
+        private readonly IActivityHeatmapService _activityHeatmapService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, IActivityHeatmapService activityHeatmapService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
@@ -32,6 +33,7 @@ namespace Motivation.Api.Controllers
             _weeklyReportService = weeklyReportService;
             _monthlyReportService = monthlyReportService;
             _yearlyReportService = yearlyReportService;
+            _activityHeatmapService = activityHeatmapService;
             _logger = logger;
         }
 
@@ -202,6 +204,21 @@ namespace Motivation.Api.Controllers
             _logger.LogInformation(
                 "Yearly report retrieved for user {UserId}: {TotalSteps} steps, {GoalsProgressed} goals progressed",
                 userId, result.TotalStepsCompleted, result.TotalGoalsProgressed);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("activity-heatmap")]
+        public async Task<IActionResult> GetActivityHeatmap()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var result = await _activityHeatmapService.GetHeatmapAsync(userId);
+            _logger.LogInformation(
+                "Activity heatmap retrieved for user {UserId}: {TotalSteps} steps, {ActiveDays} active days",
+                userId, result.TotalStepsCompleted, result.ActiveDays);
             return Ok(result);
         }
 
