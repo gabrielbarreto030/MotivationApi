@@ -22,9 +22,10 @@ namespace Motivation.Api.Controllers
         private readonly IMonthlyReportService _monthlyReportService;
         private readonly IYearlyReportService _yearlyReportService;
         private readonly IActivityHeatmapService _activityHeatmapService;
+        private readonly IRecentActivityService _recentActivityService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, IActivityHeatmapService activityHeatmapService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, IActivityHeatmapService activityHeatmapService, IRecentActivityService recentActivityService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
@@ -34,6 +35,7 @@ namespace Motivation.Api.Controllers
             _monthlyReportService = monthlyReportService;
             _yearlyReportService = yearlyReportService;
             _activityHeatmapService = activityHeatmapService;
+            _recentActivityService = recentActivityService;
             _logger = logger;
         }
 
@@ -219,6 +221,21 @@ namespace Motivation.Api.Controllers
             _logger.LogInformation(
                 "Activity heatmap retrieved for user {UserId}: {TotalSteps} steps, {ActiveDays} active days",
                 userId, result.TotalStepsCompleted, result.ActiveDays);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("recent-activity")]
+        public async Task<IActionResult> GetRecentActivity([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var result = await _recentActivityService.GetRecentActivityAsync(userId, page, pageSize);
+            _logger.LogInformation(
+                "Recent activity feed for user {UserId}: {TotalCount} total, page {Page}",
+                userId, result.TotalCount, result.Page);
             return Ok(result);
         }
 
