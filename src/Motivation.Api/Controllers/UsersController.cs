@@ -23,9 +23,10 @@ namespace Motivation.Api.Controllers
         private readonly IYearlyReportService _yearlyReportService;
         private readonly IActivityHeatmapService _activityHeatmapService;
         private readonly IRecentActivityService _recentActivityService;
+        private readonly IDailySummaryService _dailySummaryService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, IActivityHeatmapService activityHeatmapService, IRecentActivityService recentActivityService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, IActivityHeatmapService activityHeatmapService, IRecentActivityService recentActivityService, IDailySummaryService dailySummaryService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
@@ -36,6 +37,7 @@ namespace Motivation.Api.Controllers
             _yearlyReportService = yearlyReportService;
             _activityHeatmapService = activityHeatmapService;
             _recentActivityService = recentActivityService;
+            _dailySummaryService = dailySummaryService;
             _logger = logger;
         }
 
@@ -236,6 +238,31 @@ namespace Motivation.Api.Controllers
             _logger.LogInformation(
                 "Recent activity feed for user {UserId}: {TotalCount} total, page {Page}",
                 userId, result.TotalCount, result.Page);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("daily-summary")]
+        public async Task<IActionResult> GetDailySummary([FromQuery] string? date = null)
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            DateOnly queryDate;
+            if (date == null)
+            {
+                queryDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            }
+            else if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", out queryDate))
+            {
+                return BadRequest(new { error = "Invalid date format. Use yyyy-MM-dd." });
+            }
+
+            var result = await _dailySummaryService.GetDailySummaryAsync(userId, queryDate);
+            _logger.LogInformation(
+                "Daily summary for user {UserId} on {Date}: {TotalSteps} steps, {GoalsProgressed} goals",
+                userId, queryDate, result.TotalStepsCompleted, result.GoalsProgressed);
             return Ok(result);
         }
 

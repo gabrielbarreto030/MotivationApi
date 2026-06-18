@@ -59,6 +59,7 @@ builder.Services.AddScoped<IMonthlyReportService, MonthlyReportService>();
 builder.Services.AddScoped<IYearlyReportService, YearlyReportService>();
 builder.Services.AddScoped<IActivityHeatmapService, ActivityHeatmapService>();
 builder.Services.AddScoped<IRecentActivityService, RecentActivityService>();
+builder.Services.AddScoped<IDailySummaryService, DailySummaryService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // JWT authentication
