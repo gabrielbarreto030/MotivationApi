@@ -20,12 +20,14 @@ namespace Motivation.Api.Controllers
     {
         private readonly IGoalService _goalService;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IGoalTimelineService _goalTimelineService;
         private readonly ILogger<GoalsController> _logger;
 
-        public GoalsController(IGoalService goalService, ICurrentUserService currentUserService, ILogger<GoalsController> logger)
+        public GoalsController(IGoalService goalService, ICurrentUserService currentUserService, IGoalTimelineService goalTimelineService, ILogger<GoalsController> logger)
         {
             _goalService = goalService;
             _currentUserService = currentUserService;
+            _goalTimelineService = goalTimelineService;
             _logger = logger;
         }
 
@@ -381,6 +383,33 @@ namespace Motivation.Api.Controllers
             var result = await _goalService.CloneAsync(id, userId.Value);
             _logger.LogInformation("Goal {GoalId} cloned as {NewGoalId} by user {UserId}", id, result.Id, userId.Value);
             return CreatedAtAction(nameof(Clone), new { id = result.Id }, result);
+        }
+
+        /// <summary>
+        /// Retorna a linha do tempo de uma meta: lista cronológica dos passos concluídos.
+        /// </summary>
+        /// <param name="id">Id da meta.</param>
+        /// <returns>Timeline com todos os passos concluídos ordenados por data de conclusão.</returns>
+        /// <response code="200">Timeline retornada com sucesso.</response>
+        /// <response code="401">Token ausente ou inválido.</response>
+        /// <response code="404">Meta não encontrada ou não pertence ao usuário.</response>
+        [HttpGet("{id}/timeline")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTimeline(Guid id)
+        {
+            var userId = _currentUserService.GetUserId();
+            if (userId == null) return Unauthorized();
+
+            var result = await _goalTimelineService.GetTimelineAsync(userId.Value, id);
+            if (result == null)
+                return NotFound(new { error = "Goal not found." });
+
+            _logger.LogInformation(
+                "Timeline for goal {GoalId} (user {UserId}): {CompletedSteps}/{TotalSteps} steps completed",
+                id, userId.Value, result.CompletedSteps, result.TotalSteps);
+            return Ok(result);
         }
     }
 }
