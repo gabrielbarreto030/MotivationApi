@@ -24,9 +24,10 @@ namespace Motivation.Api.Controllers
         private readonly IActivityHeatmapService _activityHeatmapService;
         private readonly IRecentActivityService _recentActivityService;
         private readonly IDailySummaryService _dailySummaryService;
+        private readonly IWeekdayStatsService _weekdayStatsService;
         private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, IActivityHeatmapService activityHeatmapService, IRecentActivityService recentActivityService, IDailySummaryService dailySummaryService, ILogger<UsersController> logger)
+        public UsersController(IAuthService authService, IJwtService jwtService, IUserStatsService userStatsService, IStreakService streakService, IWeeklyReportService weeklyReportService, IMonthlyReportService monthlyReportService, IYearlyReportService yearlyReportService, IActivityHeatmapService activityHeatmapService, IRecentActivityService recentActivityService, IDailySummaryService dailySummaryService, IWeekdayStatsService weekdayStatsService, ILogger<UsersController> logger)
         {
             _authService = authService;
             _jwtService = jwtService;
@@ -38,6 +39,7 @@ namespace Motivation.Api.Controllers
             _activityHeatmapService = activityHeatmapService;
             _recentActivityService = recentActivityService;
             _dailySummaryService = dailySummaryService;
+            _weekdayStatsService = weekdayStatsService;
             _logger = logger;
         }
 
@@ -263,6 +265,21 @@ namespace Motivation.Api.Controllers
             _logger.LogInformation(
                 "Daily summary for user {UserId} on {Date}: {TotalSteps} steps, {GoalsProgressed} goals",
                 userId, queryDate, result.TotalStepsCompleted, result.GoalsProgressed);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("weekday-stats")]
+        public async Task<IActionResult> GetWeekdayStats()
+        {
+            var userIdClaim = User.FindFirst("sub");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+                return Unauthorized();
+
+            var result = await _weekdayStatsService.GetWeekdayStatsAsync(userId);
+            _logger.LogInformation(
+                "Weekday stats for user {UserId}: {TotalSteps} steps, most productive: {MostProductiveDay}",
+                userId, result.TotalStepsCompleted, result.MostProductiveDay ?? "none");
             return Ok(result);
         }
 
